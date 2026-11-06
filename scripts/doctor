@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+for tool in ffmpeg ffprobe rsvg-convert; do
+    found=""
+    for candidate in "/opt/homebrew/bin/$tool" "/usr/local/bin/$tool"; do
+        if [ -x "$candidate" ]; then found="$candidate"; break; fi
+    done
+    if [ -n "$found" ]; then printf '%s: %s\n' "$tool" "$found";
+    else printf '%s: missing (brew install ffmpeg librsvg)\n' "$tool"; exit 1; fi
+done

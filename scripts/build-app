@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$ROOT"
+swift build --build-system native --product TranscodePilot
+BIN=$(swift build --build-system native --show-bin-path)
+APP="$ROOT/.build/TranscodePilot.app"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+cp "$BIN/TranscodePilot" "$APP/Contents/MacOS/TranscodePilot"
+cp "$ROOT/Info.plist" "$APP/Contents/Info.plist"
+ditto "$ROOT/Sources/TranscodePilot/Resources" "$APP/Contents/Resources"
+codesign --force --sign - "$APP"
+codesign --verify --strict "$APP"
+printf '%s\n' "$APP"

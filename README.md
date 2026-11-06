@@ -1,0 +1,60 @@
+# TranscodePilot
+
+Local image and audio conversion for macOS, by **PilotFoundry**.
+Version **0.1.0 — development preview**. Independent of SwitchPilot.
+
+## Supported conversions
+
+- Static, self-contained SVG → PNG / JPEG, rendered at the requested pixel size.
+- PNG / JPEG / HEIC → PNG / JPEG, with proportional resizing.
+- MP4 → MP3 (128 / 192 / 320 kbps); first audio track only.
+- Batch queue, per-file settings, apply-to-similar, cancel/retry, output previews
+  for images and Finder reveal. No source deletion or output overwrite.
+- English, 简体中文, 繁體中文, 日本語; follows system language.
+
+## Build and run
+
+Requires macOS 14+, Swift 6 and Apple Command Line Tools or Xcode.
+This development build requires local conversion tools:
+
+```sh
+brew install ffmpeg librsvg
+make doctor
+make check
+make run
+```
+
+The build is `.build/TranscodePilot.app`, ad-hoc signed, not notarized.
+Build on each target architecture; only Apple Silicon has been exercised here.
+No public standalone release is provided. Engine binaries are not bundled.
+
+Drop files, select an output format, choose a folder, then Convert (⌘↩).
+⌘O adds files. Width 0 uses 1×/2×/4×; otherwise width is in actual pixels.
+JPEG fills transparent areas white. Image outputs use 8-bit sRGB.
+Successful tasks stay in the current queue; change settings to convert again.
+Settings and the last output folder are saved locally; the queue is session-only.
+
+## Boundaries
+
+- No application network requests, accounts, telemetry or background service.
+- SVG scripts, animation, HTML (`foreignObject`), linked/embedded resources,
+  external CSS and XML entities are rejected. Fonts use installed system fonts;
+  missing fonts can substitute. Convert text to paths for exact typography.
+- Images: 40 MP output, 80 MP bitmap input, 16,384 maximum output dimension.
+- Progress shows the active task and completion states, not a fabricated percent.
+- Image preview is the actual exported result, available after conversion.
+- Existing output names get `-1`, `-2`, etc. Atomic publication uses hard links;
+  output volumes must support hard links (e.g. APFS), not FAT/exFAT.
+- JPEG/PNG output does not preserve EXIF, GPS, HDR, animation or original profiles.
+- Error details from conversion engines currently remain in English.
+
+See [product principles](docs/CORE.md), [checks](docs/TESTING.md), and
+[implementation checklist](docs/IMPLEMENTATION.md).
+
+## Engines and licensing
+
+Application source is MIT. ImageIO is a system framework. FFmpeg and librsvg are
+separately installed external tools with their own licenses. Homebrew FFmpeg here
+is GPL-enabled; do not treat its dependencies as covered by this app's MIT license.
+Standalone distribution needs an audited engine build, dependency/license notices,
+architecture verification, signing and release acceptance before publication.

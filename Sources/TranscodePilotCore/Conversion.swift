@@ -1,0 +1,134 @@
+import Foundation
+import CoreGraphics
+import ImageIO
+import UniformTypeIdentifiers
+
+public enum ConversionError: Error, LocalizedError {
+    case message(String)
+    public var errorDescription: String? { if case .message(let text) = self { return text }; return nil }
+}
+
+public enum OutputFormat: String, CaseIterable, Identifiable, Sendable {
+    case png, jpg, mp3
+    public var id: String { rawValue }
+}
+
+public struct ConversionOptions: Sendable {
+    public var format: OutputFormat = .png
+    public var width = 0
+    public var scale = 2.0
+    public var whiteBackground = false
+    public var jpegQuality = 0.9
+    public var audioBitrate = 192
+    public init() {}
+}
+
+public enum Converter {
+    public static func formats(for input: URL) -> [OutputFormat] {
+        switch input.pathExtension.lowercased() {
+        case "svg", "png", "jpg", "jpeg", "heic": return [.png, .jpg]
+        case "mp4": return [.mp3]
+        default: return []
+        }
+    }
+
+    public static func convert(_ input: URL, to directory: URL, options: ConversionOptions) async throws -> URL {
+        guard formats(for: input).contains(options.format), (0...16384).contains(options.width),
+              options.scale.isFinite, (0.1...8).contains(options.scale),
+              (0...1).contains(options.jpegQuality), [128, 192, 320].contains(options.audioBitrate) else {
+            throw ConversionError.message("Unsupported format or invalid conversion settings.")
+        }
+        let fm = FileManager.default
+        guard fm.isReadableFile(atPath: input.path), fm.isWritableFile(atPath: directory.path) else {
+            throw ConversionError.message("Source or output folder is not accessible.")
+        }
+        let temporary = directory.appendingPathComponent(".transcodepilot-\(UUID())", isDirectory: true)
+        try fm.createDirectory(at: temporary, withIntermediateDirectories: false)
+        defer { try? fm.removeItem(at: temporary) }
+        let result = temporary.appendingPathComponent("output.\(options.format.rawValue)")
+        if options.format == .mp3 {
+            guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else {
+                throw ConversionError.message("Install FFmpeg: brew install ffmpeg")
+            }
+            let info = try await ProcessRunner.run(probe, ["-v", "error", "-protocol_whitelist", "file,pipe", "-f", "mov", "-select_streams", "a:0", "-show_entries", "stream=index", "-of", "csv=p=0", input.path])
+            guard !info.isEmpty else { throw ConversionError.message("This video has no audio track.") }
+            _ = try await ProcessRunner.run(ffmpeg, ["-nostdin", "-v", "error", "-n", "-protocol_whitelist", "file,pipe", "-f", "mov", "-i", input.path, "-map", "0:a:0", "-vn", "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600)
+            let verification = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", result.path])
+            guard let duration = Double(String(decoding: verification, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)), duration > 0 else {
+                throw ConversionError.message("Output audio could not be verified.")
+            }
+        } else {
+            var sourceURL = input
+            if input.pathExtension.lowercased() == "svg" {
+                guard let renderer = Tools.find("rsvg-convert") else {
+                    throw ConversionError.message("Install SVG renderer: brew install librsvg")
+                }
+                let data = try Data(contentsOf: input)
+                let svgSize = try SVGDocument.validate(data)
+                let renderWidth = options.width > 0 ? Double(options.width) : svgSize.width * options.scale
+                let renderHeight = svgSize.height * renderWidth / svgSize.width
+                guard renderWidth >= 1, renderHeight >= 1, renderWidth <= 16384, renderHeight <= 16384,
+                      renderWidth * renderHeight <= 40_000_000 else {
+                    throw ConversionError.message("SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
+                }
+                let isolated = temporary.appendingPathComponent("input.svg")
+                try data.write(to: isolated)
+                sourceURL = temporary.appendingPathComponent("render.png")
+                var args = ["--format", "png", "--keep-aspect-ratio"]
+                args += ["--width", String(Int(renderWidth.rounded())), "--height", String(Int(renderHeight.rounded()))]
+                args += ["--output", sourceURL.path, isolated.path]
+                _ = try await ProcessRunner.run(renderer, args, timeout: 30)
+            }
+            guard let source = CGImageSourceCreateWithURL(sourceURL as CFURL, nil),
+                  let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+                  let sourceWidth = properties[kCGImagePropertyPixelWidth] as? Int,
+                  let sourceHeight = properties[kCGImagePropertyPixelHeight] as? Int else {
+                throw ConversionError.message("Cannot read this image.")
+            }
+            let orientation = properties[kCGImagePropertyOrientation] as? Int ?? 1
+            let displayedWidth = (5...8).contains(orientation) ? sourceHeight : sourceWidth
+            let displayedHeight = (5...8).contains(orientation) ? sourceWidth : sourceHeight
+            let isSVG = input.pathExtension.lowercased() == "svg"
+            let width = isSVG ? displayedWidth : (options.width > 0 ? options.width : Int(Double(displayedWidth) * options.scale))
+            let height = Int((Double(displayedHeight) * Double(width) / Double(max(1, displayedWidth))).rounded())
+            guard width > 0, height > 0, width <= 16384, height <= 16384,
+                  Double(width) * Double(height) <= 40_000_000,
+                  Double(sourceWidth) * Double(sourceHeight) <= 80_000_000 else {
+                throw ConversionError.message("Image exceeds the 40 megapixel output or 80 megapixel input limit.")
+            }
+            let thumbnail: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: max(width, height)]
+            guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnail as CFDictionary),
+                  let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                    space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+                throw ConversionError.message("Cannot allocate output image.")
+            }
+            let rect = CGRect(x: 0, y: 0, width: width, height: height)
+            if options.whiteBackground || options.format == .jpg {
+                context.setFillColor(CGColor(gray: 1, alpha: 1)); context.fill(rect)
+            }
+            context.interpolationQuality = .high
+            context.draw(image, in: rect)
+            guard let rendered = context.makeImage(), let destination = CGImageDestinationCreateWithURL(result as CFURL,
+                (options.format == .png ? UTType.png.identifier : UTType.jpeg.identifier) as CFString, 1, nil) else {
+                throw ConversionError.message("Cannot create image output.")
+            }
+            CGImageDestinationAddImage(destination, rendered, [kCGImageDestinationLossyCompressionQuality: options.jpegQuality] as CFDictionary)
+            guard CGImageDestinationFinalize(destination), let check = CGImageSourceCreateWithURL(result as CFURL, nil),
+                  let decoded = CGImageSourceCreateImageAtIndex(check, 0, nil), decoded.width == width, decoded.height == height else {
+                throw ConversionError.message("Output image verification failed.")
+            }
+        }
+        try Task.checkCancellation()
+        let stem = input.deletingPathExtension().lastPathComponent
+        for index in 0..<10000 {
+            let suffix = index == 0 ? "" : "-\(index)"
+            let target = directory.appendingPathComponent("\(stem)\(suffix).\(options.format.rawValue)")
+            // link() publishes a complete file atomically and refuses to overwrite an existing path.
+            if link(result.path, target.path) == 0 { return target }
+            if errno != EEXIST { throw ConversionError.message("Cannot save output: \(String(cString: strerror(errno)))") }
+        }
+        throw ConversionError.message("Too many files with the same output name.")
+    }
+}
