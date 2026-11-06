@@ -75,6 +75,85 @@ func pixels(_ url: URL) throws -> CGImage {
             do { _ = try await Converter.convert(svg, to: folder, options: options) }
             catch { rejected = true }
             try expect(rejected, "negative width rejected")
+
+            var imageOptions = ConversionOptions()
+            imageOptions.width = 1000
+            let svgMetadata = try SourceInspector.inspect(svg)
+            try expect(svgMetadata.kind == .svg, "SVG source is identified")
+            let svgEstimate = try ConversionPlanner.estimate(svgMetadata, options: imageOptions)
+            try expect(svgEstimate == ConversionEstimate(width: 1000, height: 500), "SVG estimate matches target pixels")
+            let jpegMetadata = try SourceInspector.inspect(jpg)
+            var resizeOptions = ConversionOptions()
+            resizeOptions.width = 250
+            let resizeEstimate = try ConversionPlanner.estimate(jpegMetadata, options: resizeOptions)
+            try expect(resizeEstimate == ConversionEstimate(width: 250, height: 125), "bitmap estimate preserves ratio")
+            var invalidOptions = ConversionOptions()
+            invalidOptions.width = -1
+            var estimateRejected = false
+            do { _ = try ConversionPlanner.estimate(svgMetadata, options: invalidOptions) }
+            catch { estimateRejected = true }
+            try expect(estimateRejected, "invalid width rejected by planner")
+
+            try expect(PreferenceDefaults.sanitizedScale(nil) == 2, "missing scale uses default")
+            try expect(PreferenceDefaults.sanitizedScale(3) == 2, "unexpected scale is sanitized")
+            try expect(PreferenceDefaults.sanitizedJPEGQuality(.nan) == 0.9, "non-finite quality uses default")
+            try expect(PreferenceDefaults.sanitizedJPEGQuality(5) == 1, "quality is clamped")
+            try expect(PreferenceDefaults.sanitizedAudioBitrate(999) == 192, "unexpected bitrate is sanitized")
+
+            let empty = folder.appendingPathComponent("empty.svg")
+            try Data().write(to: empty)
+            let huge = folder.appendingPathComponent("huge.svg")
+            FileManager.default.createFile(atPath: huge.path, contents: nil)
+            let hugeHandle = try FileHandle(forWritingTo: huge)
+            try hugeHandle.truncate(atOffset: UInt64(InputFile.svgSizeLimit + 1))
+            try hugeHandle.close()
+            let corrupt = folder.appendingPathComponent("corrupt.png")
+            try Data(repeating: 0, count: 64).write(to: corrupt)
+            let fakeDirectory = folder.appendingPathComponent("fake.png", isDirectory: true)
+            try FileManager.default.createDirectory(at: fakeDirectory, withIntermediateDirectories: true)
+            let tall = folder.appendingPathComponent("tall.svg")
+            try Data(#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 10000"><rect width="1" height="10000" fill="red"/></svg>"#.utf8).write(to: tall)
+            var tallOptions = ConversionOptions()
+            tallOptions.width = 16_384
+            for (label, url, expected) in [
+                ("empty source", empty, "empty"),
+                ("oversized SVG", huge, "20 MB"),
+                ("corrupt PNG", corrupt, "Cannot read this image"),
+                ("directory source", fakeDirectory, "regular file"),
+                ("extreme aspect ratio", tall, "SVG output exceeds")
+            ] {
+                var failed = false
+                do {
+                    let output = try await Converter.convert(url, to: folder, options: url == tall ? tallOptions : imageOptions)
+                    _ = output
+                } catch {
+                    failed = true
+                    try expect(error.localizedDescription.contains(expected), "\(label) reports the expected reason")
+                }
+                try expect(failed, "\(label) is rejected")
+            }
+
+            let linked = folder.appendingPathComponent("linked drawing.svg")
+            try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: svg)
+            let linkedOutput = try await Converter.convert(linked, to: folder, options: imageOptions)
+            let linkedImage = try pixels(linkedOutput)
+            try expect(linkedImage.width == 1000 && linkedImage.height == 500, "symlinked source converts through its target")
+
+            let (cancelStream, cancelContinuation) = AsyncStream<Void>.makeStream()
+            let cancelTask = Task {
+                var iterator = cancelStream.makeAsyncIterator()
+                _ = await iterator.next()
+                return try await Converter.convert(svg, to: folder, options: imageOptions)
+            }
+            cancelTask.cancel()
+            cancelContinuation.yield(())
+            cancelContinuation.finish()
+            var cancelledBeforePublishing = false
+            do { _ = try await cancelTask.value }
+            catch is CancellationError { cancelledBeforePublishing = true }
+            catch { throw error }
+            try expect(cancelledBeforePublishing, "cancelled conversion stops before publishing")
+
             guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else { throw ConversionError.message("FFmpeg required for checks") }
             let video = folder.appendingPathComponent("sample.mp4")
             _ = try await ProcessRunner.run(ffmpeg, ["-v", "error", "-f", "lavfi", "-i", "color=c=blue:s=64x64:d=1", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-c:v", "mpeg4", "-c:a", "aac", "-shortest", video.path])
@@ -91,13 +170,16 @@ func pixels(_ url: URL) throws -> CGImage {
             try expect(rejected, "video without audio rejected")
             let task = Task { try await ProcessRunner.run(URL(fileURLWithPath: "/bin/sleep"), ["10"]) }
             try await Task.sleep(nanoseconds: 100_000_000)
+            let cancellationStart = Date()
             task.cancel()
             do { _ = try await task.value; throw ConversionError.message("FAIL: cancellation ignored") }
             catch is CancellationError { }
+            try expect(Date().timeIntervalSince(cancellationStart) < 3, "child process cancellation is prompt")
             let remaining = try FileManager.default.contentsOfDirectory(atPath: folder.path)
             try expect(!remaining.contains(where: { $0.hasPrefix(".transcodepilot-") }), "temporary outputs cleaned up")
             print("PASS: MP4 → MP3, missing audio, child process cancellation and temporary cleanup")
             print("PASS: SVG pixels, transparency, JPEG background, bitmap resize, collision safety, source preservation and unsafe input")
+            print("PASS: input bounds, symlink source, cancelled conversion, planner estimates and preference sanitizing")
         } catch {
             fputs("\(error.localizedDescription)\n", stderr)
             exit(1)

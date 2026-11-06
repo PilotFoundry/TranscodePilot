@@ -21,6 +21,15 @@ public struct ConversionOptions: Sendable {
     public var jpegQuality = 0.9
     public var audioBitrate = 192
     public init() {}
+
+    public func validate() throws {
+        guard (0...16_384).contains(width),
+              scale.isFinite, (0.1...8).contains(scale),
+              (0...1).contains(jpegQuality),
+              [128, 192, 320].contains(audioBitrate) else {
+            throw ConversionError.message("Unsupported format or invalid conversion settings.")
+        }
+    }
 }
 
 public enum Converter {
@@ -33,13 +42,15 @@ public enum Converter {
     }
 
     public static func convert(_ input: URL, to directory: URL, options: ConversionOptions) async throws -> URL {
-        guard formats(for: input).contains(options.format), (0...16384).contains(options.width),
-              options.scale.isFinite, (0.1...8).contains(options.scale),
-              (0...1).contains(options.jpegQuality), [128, 192, 320].contains(options.audioBitrate) else {
+        try options.validate()
+        try Task.checkCancellation()
+        guard formats(for: input).contains(options.format) else {
             throw ConversionError.message("Unsupported format or invalid conversion settings.")
         }
         let fm = FileManager.default
-        guard fm.isReadableFile(atPath: input.path), fm.isWritableFile(atPath: directory.path) else {
+        let source = try InputFile.regularFileURL(input)
+        let directoryValues = try? directory.resolvingSymlinksInPath().resourceValues(forKeys: [.isDirectoryKey])
+        guard directoryValues?.isDirectory == true, fm.isWritableFile(atPath: directory.path) else {
             throw ConversionError.message("Source or output folder is not accessible.")
         }
         let temporary = directory.appendingPathComponent(".transcodepilot-\(UUID())", isDirectory: true)
@@ -50,27 +61,32 @@ public enum Converter {
             guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else {
                 throw ConversionError.message("Install FFmpeg: brew install ffmpeg")
             }
-            let info = try await ProcessRunner.run(probe, ["-v", "error", "-protocol_whitelist", "file,pipe", "-f", "mov", "-select_streams", "a:0", "-show_entries", "stream=index", "-of", "csv=p=0", input.path])
+            let info = try await ProcessRunner.run(probe, ["-v", "error", "-protocol_whitelist", "file,pipe", "-f", "mov", "-select_streams", "a:0", "-show_entries", "stream=index", "-of", "csv=p=0", source.path])
             guard !info.isEmpty else { throw ConversionError.message("This video has no audio track.") }
-            _ = try await ProcessRunner.run(ffmpeg, ["-nostdin", "-v", "error", "-n", "-protocol_whitelist", "file,pipe", "-f", "mov", "-i", input.path, "-map", "0:a:0", "-vn", "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600)
+            _ = try await ProcessRunner.run(ffmpeg, ["-nostdin", "-v", "error", "-n", "-protocol_whitelist", "file,pipe", "-f", "mov", "-i", source.path, "-map", "0:a:0", "-vn", "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600)
             let verification = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", result.path])
             guard let duration = Double(String(decoding: verification, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)), duration > 0 else {
                 throw ConversionError.message("Output audio could not be verified.")
             }
         } else {
-            var sourceURL = input
+            var sourceURL = source
             if input.pathExtension.lowercased() == "svg" {
                 guard let renderer = Tools.find("rsvg-convert") else {
                     throw ConversionError.message("Install SVG renderer: brew install librsvg")
                 }
-                let data = try Data(contentsOf: input)
+                let data = try InputFile.readData(
+                    input,
+                    limit: InputFile.svgSizeLimit,
+                    limitMessage: "SVG must be UTF-8 and smaller than 20 MB."
+                )
                 let svgSize = try SVGDocument.validate(data)
                 let renderWidth = options.width > 0 ? Double(options.width) : svgSize.width * options.scale
                 let renderHeight = svgSize.height * renderWidth / svgSize.width
-                guard renderWidth >= 1, renderHeight >= 1, renderWidth <= 16384, renderHeight <= 16384,
+                guard renderWidth >= 1, renderHeight >= 1, renderWidth <= 16_384, renderHeight <= 16_384,
                       renderWidth * renderHeight <= 40_000_000 else {
                     throw ConversionError.message("SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
                 }
+                try Task.checkCancellation()
                 let isolated = temporary.appendingPathComponent("input.svg")
                 try data.write(to: isolated)
                 sourceURL = temporary.appendingPathComponent("render.png")
@@ -79,29 +95,38 @@ public enum Converter {
                 args += ["--output", sourceURL.path, isolated.path]
                 _ = try await ProcessRunner.run(renderer, args, timeout: 30)
             }
-            guard let source = CGImageSourceCreateWithURL(sourceURL as CFURL, nil),
-                  let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+            guard let sourceImage = CGImageSourceCreateWithURL(sourceURL as CFURL, nil),
+                  let properties = CGImageSourceCopyPropertiesAtIndex(sourceImage, 0, nil) as? [CFString: Any],
                   let sourceWidth = properties[kCGImagePropertyPixelWidth] as? Int,
-                  let sourceHeight = properties[kCGImagePropertyPixelHeight] as? Int else {
+                  let sourceHeight = properties[kCGImagePropertyPixelHeight] as? Int,
+                  sourceWidth > 0, sourceHeight > 0,
+                  Double(sourceWidth) * Double(sourceHeight) <= 80_000_000 else {
                 throw ConversionError.message("Cannot read this image.")
             }
             let orientation = properties[kCGImagePropertyOrientation] as? Int ?? 1
             let displayedWidth = (5...8).contains(orientation) ? sourceHeight : sourceWidth
             let displayedHeight = (5...8).contains(orientation) ? sourceWidth : sourceHeight
+            guard displayedWidth > 0, displayedHeight > 0 else {
+                throw ConversionError.message("Source dimensions are invalid.")
+            }
             let isSVG = input.pathExtension.lowercased() == "svg"
             let width = isSVG ? displayedWidth : (options.width > 0 ? options.width : Int(Double(displayedWidth) * options.scale))
             let height = Int((Double(displayedHeight) * Double(width) / Double(max(1, displayedWidth))).rounded())
-            guard width > 0, height > 0, width <= 16384, height <= 16384,
+            guard width > 0, height > 0, width <= 16_384, height <= 16_384,
                   Double(width) * Double(height) <= 40_000_000,
                   Double(sourceWidth) * Double(sourceHeight) <= 80_000_000 else {
                 throw ConversionError.message("Image exceeds the 40 megapixel output or 80 megapixel input limit.")
             }
+            try Task.checkCancellation()
             let thumbnail: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceCreateThumbnailWithTransform: true,
                 kCGImageSourceThumbnailMaxPixelSize: max(width, height)]
-            guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnail as CFDictionary),
-                  let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-                    space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+            guard let image = CGImageSourceCreateThumbnailAtIndex(sourceImage, 0, thumbnail as CFDictionary) else {
+                throw ConversionError.message("Cannot decode this image.")
+            }
+            try Task.checkCancellation()
+            guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
                 throw ConversionError.message("Cannot allocate output image.")
             }
             let rect = CGRect(x: 0, y: 0, width: width, height: height)
@@ -110,6 +135,7 @@ public enum Converter {
             }
             context.interpolationQuality = .high
             context.draw(image, in: rect)
+            try Task.checkCancellation()
             guard let rendered = context.makeImage(), let destination = CGImageDestinationCreateWithURL(result as CFURL,
                 (options.format == .png ? UTType.png.identifier : UTType.jpeg.identifier) as CFString, 1, nil) else {
                 throw ConversionError.message("Cannot create image output.")
@@ -119,6 +145,7 @@ public enum Converter {
                   let decoded = CGImageSourceCreateImageAtIndex(check, 0, nil), decoded.width == width, decoded.height == height else {
                 throw ConversionError.message("Output image verification failed.")
             }
+            try Task.checkCancellation()
         }
         try Task.checkCancellation()
         let stem = input.deletingPathExtension().lastPathComponent

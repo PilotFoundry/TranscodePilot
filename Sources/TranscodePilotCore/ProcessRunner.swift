@@ -37,7 +37,14 @@ public enum ProcessRunner {
             }
         } catch {
             if process.isRunning { process.interrupt() }
-            for _ in 0..<10 where process.isRunning { try? await Task.sleep(nanoseconds: 20_000_000) }
+            // This task is already cancelled on the cancellation path, where
+            // Task.sleep throws immediately. Give the child a real grace period
+            // with a wait that is not tied to this task's cancellation.
+            let deadline = Date().addingTimeInterval(1)
+            while process.isRunning && Date() < deadline {
+                if Task.isCancelled { usleep(20_000) }
+                else { try? await Task.sleep(nanoseconds: 20_000_000) }
+            }
             if process.isRunning { kill(process.processIdentifier, SIGKILL) }
             process.waitUntilExit()
             throw error
