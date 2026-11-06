@@ -4,21 +4,36 @@ import UniformTypeIdentifiers
 import TranscodePilotCore
 
 func L(_ key: String) -> String {
-    let packaged = Bundle.main.resourceURL!
-    let root = FileManager.default.fileExists(atPath: packaged.appendingPathComponent("en.lproj").path)
-        ? packaged : Bundle.module.url(forResource: "Resources", withExtension: nil)!
+    guard let packaged = Bundle.main.resourceURL else { return key }
+    let root: URL
+    if FileManager.default.fileExists(atPath: packaged.appendingPathComponent("en.lproj").path) {
+        root = packaged
+    } else if let module = Bundle.module.url(forResource: "Resources", withExtension: nil) {
+        root = module
+    } else {
+        return key
+    }
     let language = Bundle.preferredLocalizations(from: ["en", "zh-Hans", "zh-Hant", "ja"]).first ?? "en"
-    let bundle = Bundle(url: root.appendingPathComponent("\(language).lproj"))
-    return bundle?.localizedString(forKey: key, value: key, table: nil) ?? key
+    guard let bundle = Bundle(url: root.appendingPathComponent("\(language).lproj")) else { return key }
+    return bundle.localizedString(forKey: key, value: key, table: nil)
 }
 
 struct ConversionItem: Identifiable {
     let id = UUID()
     let source: URL
     var options: ConversionOptions
+    var metadata: SourceMetadata?
     var status = "Ready"
     var output: URL?
     var error: String?
+    var estimate: ConversionEstimate?
+    var validationError: String?
+
+    init(source: URL, options: ConversionOptions, metadata: SourceMetadata? = nil) {
+        self.source = source
+        self.options = options
+        self.metadata = metadata
+    }
 }
 
 @MainActor final class AppModel: ObservableObject {
@@ -31,9 +46,18 @@ struct ConversionItem: Identifiable {
     private var worker: Task<Void, Never>?
     var selectedIndex: Int? { items.firstIndex(where: { $0.id == selection }) }
 
+    var canStart: Bool {
+        guard !running else { return false }
+        let pending = items.filter { $0.status != "Done" }
+        return !pending.isEmpty && pending.allSatisfy { $0.validationError == nil }
+    }
+
     init() {
-        if let path = UserDefaults.standard.string(forKey: "outputFolder"), FileManager.default.fileExists(atPath: path) {
-            outputFolder = URL(fileURLWithPath: path)
+        if let path = UserDefaults.standard.string(forKey: "outputFolder") {
+            let url = URL(fileURLWithPath: path)
+            if let values = try? url.resourceValues(forKeys: [.isDirectoryKey]), values.isDirectory == true {
+                outputFolder = url
+            }
         }
     }
 
@@ -47,13 +71,19 @@ struct ConversionItem: Identifiable {
             options.format = formats[0]
             let defaults = UserDefaults.standard
             if let saved = defaults.string(forKey: "imageFormat"), let format = OutputFormat(rawValue: saved), formats.contains(format) { options.format = format }
-            options.scale = defaults.object(forKey: "scale") as? Double ?? 2
-            options.jpegQuality = defaults.object(forKey: "quality") as? Double ?? 0.9
+            options.scale = PreferenceDefaults.sanitizedScale(defaults.object(forKey: "scale") as? Double)
+            options.jpegQuality = PreferenceDefaults.sanitizedJPEGQuality(defaults.object(forKey: "quality") as? Double)
             options.whiteBackground = defaults.bool(forKey: "whiteBackground")
-            options.audioBitrate = defaults.object(forKey: "bitrate") as? Int ?? 192
-            let item = ConversionItem(source: url, options: options)
+            options.audioBitrate = PreferenceDefaults.sanitizedAudioBitrate(defaults.object(forKey: "bitrate") as? Int)
+            var metadata: SourceMetadata?
+            var inspectionError: String?
+            do { metadata = try SourceInspector.inspect(url) }
+            catch { inspectionError = error.localizedDescription }
+            var item = ConversionItem(source: url, options: options, metadata: metadata)
+            item.validationError = inspectionError
             items.append(item)
             selection = item.id
+            refreshValidation(at: items.count - 1)
         }
         if !rejected.isEmpty { notice = L("Unsupported files") + ": " + rejected.joined(separator: ", ") }
     }
@@ -84,6 +114,7 @@ struct ConversionItem: Identifiable {
         items[index].output = nil
         items[index].error = nil
         items[index].status = "Ready"
+        refreshValidation(at: index)
         let defaults = UserDefaults.standard
         if options.format != .mp3 { defaults.set(options.format.rawValue, forKey: "imageFormat") }
         defaults.set(options.scale, forKey: "scale")
@@ -100,11 +131,12 @@ struct ConversionItem: Identifiable {
             items[i].status = "Ready"
             items[i].output = nil
             items[i].error = nil
+            refreshValidation(at: i)
         }
     }
 
     func start() {
-        guard !running else { return }
+        guard canStart else { return }
         if outputFolder == nil { chooseFolder() }
         guard let directory = outputFolder else { return }
         let jobs = items.filter { $0.status != "Done" }
@@ -138,6 +170,32 @@ struct ConversionItem: Identifiable {
         guard !running else { return }
         items.removeAll { $0.id == selection }
         selection = items.first?.id
+    }
+
+    private func refreshValidation(at index: Int) {
+        guard items.indices.contains(index) else { return }
+        guard let metadata = items[index].metadata else {
+            items[index].estimate = nil
+            return
+        }
+        guard items[index].options.format != .mp3 else {
+            items[index].estimate = nil
+            items[index].validationError = nil
+            return
+        }
+        let width = items[index].options.width
+        guard width >= 0, width <= 16_384 else {
+            items[index].estimate = nil
+            items[index].validationError = L("Width must be 0 or between 1 and 16,384 pixels.")
+            return
+        }
+        do {
+            items[index].estimate = try ConversionPlanner.estimate(metadata, options: items[index].options)
+            items[index].validationError = nil
+        } catch {
+            items[index].estimate = nil
+            items[index].validationError = error.localizedDescription
+        }
     }
 }
 

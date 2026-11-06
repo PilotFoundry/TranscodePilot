@@ -39,3 +39,7 @@
 "Copy" = "复制";
 "Paste" = "粘贴";
 "Select All" = "全选";
+"Estimated output" = "预计输出";
+"Width must be 0 or between 1 and 16,384 pixels." = "宽度必须为 0 或 1–16,384 像素。";
+"Conversion in progress" = "正在转换";
+"Wait for the current conversion to finish or cancel it first." = "请等待当前转换完成，或先取消转换。";

@@ -1,9 +1,11 @@
 import AppKit
 import SwiftUI
 
-@MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
+@MainActor final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model = AppModel()
     var window: NSWindow!
+    private var terminationInProgress = false
+    private var terminationTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
@@ -11,6 +13,7 @@ import SwiftUI
                           styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         window.title = "TranscodePilot"
         window.contentViewController = NSHostingController(rootView: MainView(model: model))
+        window.delegate = self
         window.center()
         window.makeKeyAndOrderFront(nil)
         let menu = NSMenu()
@@ -44,9 +47,61 @@ import SwiftUI
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if model.running { model.cancel(); return .terminateCancel }
-        return .terminateNow
+        if terminationInProgress { return .terminateLater }
+        guard model.running else { return .terminateNow }
+        // Cancel, let the worker stop its child process and clean its temporary
+        // output, then finish the quit. The timeout keeps a stuck bitmap stage
+        // from wedging termination forever.
+        terminationInProgress = true
+        model.cancel()
+        let deadline = Date().addingTimeInterval(5)
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard let self, self.terminationInProgress else {
+                    timer.invalidate()
+                    return
+                }
+                if !self.model.running || Date() >= deadline {
+                    self.finishTermination()
+                }
+            }
+        }
+        terminationTimer = timer
+        return .terminateLater
+    }
+
+    private func finishTermination() {
+        guard terminationInProgress else { return }
+        terminationInProgress = false
+        terminationTimer?.invalidate()
+        terminationTimer = nil
+        NSApp.reply(toApplicationShouldTerminate: true)
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        if terminationInProgress { return true }
+        guard model.running else { return true }
+        let alert = NSAlert()
+        alert.messageText = L("Conversion in progress")
+        alert.informativeText = L("Wait for the current conversion to finish or cancel it first.")
+        alert.addButton(withTitle: L("OK"))
+        alert.runModal()
+        return false
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            window?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+        return true
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        terminationTimer?.invalidate()
+        terminationTimer = nil
     }
 }
 

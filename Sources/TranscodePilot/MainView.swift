@@ -41,7 +41,11 @@ struct MainView: View {
                                             .font(.caption.monospaced()).foregroundStyle(.secondary)
                                     }
                                     Spacer()
-                                    if item.status == "Converting" { ProgressView().controlSize(.small) }
+                                    if let validation = item.validationError {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundStyle(.red)
+                                            .help(validation)
+                                    } else if item.status == "Converting" { ProgressView().controlSize(.small) }
                                     else { Text(L(item.status)).font(.caption).foregroundStyle(statusColor(item.status)) }
                                 }.padding(.vertical, 8).tag(item.id)
                             }
@@ -73,7 +77,7 @@ struct MainView: View {
                 } else {
                     Button(L(model.items.contains { $0.status == "Failed" || $0.status == "Cancelled" } ? "Retry remaining" : "Convert")) { model.start() }
                         .buttonStyle(.borderedProminent).tint(.orange).keyboardShortcut(.return, modifiers: .command)
-                        .disabled(model.items.isEmpty || model.items.allSatisfy { $0.status == "Done" })
+                        .disabled(!model.canStart)
                 }
             }.padding(16)
         }
@@ -113,6 +117,7 @@ struct MainView: View {
                         Text("192 kbps").tag(192)
                         Text("320 kbps").tag(320)
                     }
+                    validationView(item)
                 } else {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(L("Width in pixels")).font(.callout.weight(.medium))
@@ -123,11 +128,12 @@ struct MainView: View {
                             Text("1×").tag(1.0); Text("2×").tag(2.0); Text("4×").tag(4.0)
                         }.pickerStyle(.segmented).disabled(item.options.width != 0)
                     }
+                    validationView(item)
                     if item.options.format == .png {
                         Toggle(L("White background"), isOn: setting(item, \.whiteBackground))
                     } else {
                         VStack(alignment: .leading) {
-                            HStack { Text(L("Quality")); Spacer(); Text("\(Int(item.options.jpegQuality * 100))%").monospacedDigit() }
+                            HStack { Text(L("Quality")); Spacer(); Text(qualityText(item.options.jpegQuality)).monospacedDigit() }
                             Slider(value: setting(item, \.jpegQuality), in: 0.1...1)
                             Text(L("Transparent areas become white.")).font(.caption).foregroundStyle(.secondary)
                         }
@@ -165,5 +171,26 @@ struct MainView: View {
 
     func statusColor(_ status: String) -> Color {
         switch status { case "Failed": return .red; case "Done": return .blue; case "Cancelled": return .orange; default: return .secondary }
+    }
+
+    func qualityText(_ value: Double) -> String {
+        let safe = value.isFinite ? min(max(value, 0), 1) : 0.9
+        return "\(Int((safe * 100).rounded()))%"
+    }
+
+    @ViewBuilder func validationView(_ item: ConversionItem) -> some View {
+        if let validation = item.validationError {
+            Label(validation, systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.red)
+        } else if item.options.format != .mp3, let estimate = item.estimate {
+            HStack {
+                Text(L("Estimated output"))
+                Spacer()
+                Text("\(estimate.width) × \(estimate.height) px").monospacedDigit()
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
     }
 }

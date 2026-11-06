@@ -39,3 +39,7 @@
 "Copy" = "コピー";
 "Paste" = "ペースト";
 "Select All" = "すべてを選択";
+"Estimated output" = "出力予定";
+"Width must be 0 or between 1 and 16,384 pixels." = "幅は 0 または 1〜16,384 ピクセルにしてください。";
+"Conversion in progress" = "変換を実行中です";
+"Wait for the current conversion to finish or cancel it first." = "現在の変換が完了するのを待つか、先に変換をキャンセルしてください。";

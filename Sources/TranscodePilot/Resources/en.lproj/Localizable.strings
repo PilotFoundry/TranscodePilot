@@ -39,3 +39,7 @@
 "Copy" = "Copy";
 "Paste" = "Paste";
 "Select All" = "Select All";
+"Estimated output" = "Estimated output";
+"Width must be 0 or between 1 and 16,384 pixels." = "Width must be 0 or between 1 and 16,384 pixels.";
+"Conversion in progress" = "Conversion in progress";
+"Wait for the current conversion to finish or cancel it first." = "Wait for the current conversion to finish or cancel it first.";
