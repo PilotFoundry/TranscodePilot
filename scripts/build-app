@@ -2,8 +2,13 @@
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
-swift build --build-system native --product TranscodePilot
-BIN=$(swift build --build-system native --show-bin-path)
+SWIFT=${SWIFT:-swift}
+SWIFT_FLAGS=${SWIFT_FLAGS:-}
+# SWIFT_FLAGS is intentionally split into words so callers can pass several flags.
+# shellcheck disable=SC2086
+"$SWIFT" build $SWIFT_FLAGS --product TranscodePilot
+# shellcheck disable=SC2086
+BIN=$("$SWIFT" build $SWIFT_FLAGS --show-bin-path)
 APP="$ROOT/.build/TranscodePilot.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/TranscodePilot" "$APP/Contents/MacOS/TranscodePilot"

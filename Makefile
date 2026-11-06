@@ -1,11 +1,16 @@
-.PHONY: build check app run doctor
+SWIFT ?= swift
+SWIFT_FLAGS ?=
+
+.PHONY: build check app run doctor clean
 build:
-	swift build --build-system native
+	$(SWIFT) build $(SWIFT_FLAGS)
 check:
-	swift run --build-system native TranscodePilotChecks
+	$(SWIFT) run $(SWIFT_FLAGS) TranscodePilotChecks
 app:
-	./scripts/build-app
+	SWIFT="$(SWIFT)" SWIFT_FLAGS="$(SWIFT_FLAGS)" ./scripts/build-app
 run: app
 	open .build/TranscodePilot.app
 doctor:
 	./scripts/doctor
+clean:
+	rm -rf .build
