@@ -30,9 +30,13 @@ No public standalone release is provided. Engine binaries are not bundled.
 
 Drop files, select an output format, choose a folder, then Convert (⌘↩).
 ⌘O adds files. Width 0 uses 1×/2×/4×; otherwise width is in actual pixels.
+Invalid widths or output limits are shown inline and Convert stays disabled
+while a pending file is invalid. The inspector shows estimated output dimensions.
 JPEG fills transparent areas white. Image outputs use 8-bit sRGB.
 Successful tasks stay in the current queue; change settings to convert again.
 Settings and the last output folder are saved locally; the queue is session-only.
+Quitting during conversion cancels the active task, waits briefly for cleanup,
+then quits; the window cannot be closed while a conversion is running.
 
 ## Boundaries
 

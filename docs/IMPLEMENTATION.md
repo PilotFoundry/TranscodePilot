@@ -19,6 +19,10 @@ No network access, telemetry, login item, destructive overwrite, or private API.
   license and README. Files: `scripts/`, `Makefile`, `Info.plist`, documentation.
 - [x] Verify: `make check`, `make app`, signature/bundle validation and app launch.
   Document manual visual/accessibility and distribution checks still pending.
+- [x] Phase 1 review batch (2026-11-06): local Git baseline and reproducible build
+  flags; bounded input preflight and shared conversion planning; sanitized stored
+  preferences and inline validation/estimates; bitmap cancellation checks and a
+  real child grace wait; cancel-then-quit, close blocking and Dock reopen.
 
 ## Acceptance
 
@@ -40,3 +44,38 @@ No release upload, remote repository creation or domain purchase in this task.
   VoiceOver, Intel and macOS 14 acceptance remain unexecuted.
 - CLT build uses SwiftPM's native backend explicitly; Swift 6.4 emits a
   deprecation notice for that backend, but compilation and checks pass.
+  (Superseded on 2026-11-06: the default SwiftPM backend is used now.)
+
+## Phase 1 — 2026-11-06
+
+- Git baseline commit recorded locally; no remote exists. `Makefile` and
+  `scripts/build-app` accept optional `SWIFT_FLAGS`; the default SwiftPM backend
+  is used (the `native` backend is deprecated).
+- Core: `InputFile` rejects unreadable/empty/non-regular files and checks SVG
+  size before `Data(contentsOf:)`; `SourceInspector`/`ConversionPlanner` share
+  dimension limits with the conversion path; stored scale/quality/bitrate
+  values are sanitized; bitmap conversions check cancellation between stages;
+  cancelled child processes get a real grace period before SIGKILL.
+- App: invalid/oversized widths and output-limit failures show inline, estimated
+  output dimensions are displayed, and Convert is disabled while any pending
+  item is invalid; conversion during quit is cancelled and termination is
+  retried after cleanup (up to 5 s); window close is blocked while converting;
+  Dock reopen restores the window; localization lookup no longer force-unwraps.
+- Checks: added empty/oversized/corrupt/directory inputs, extreme aspect ratio,
+  symlink source, cancelled conversion, planner estimates and preference
+  sanitizing.
+
+### Recorded verification — 2026-11-06
+
+- `make doctor`: PASS.
+- `make check SWIFT_FLAGS=--disable-sandbox`: PASS (three PASS groups).
+- `make app SWIFT_FLAGS=--disable-sandbox`: PASS; ad-hoc signature verifies.
+- App smoke launch: process started; no visual or interaction acceptance performed.
+- Four `Localizable.strings` tables: 45 keys each, key sets identical;
+  `plutil -lint` passes.
+- Environment caveat: plain `make check`/`make app` fail inside this agent session
+  because SwiftPM invokes `sandbox-exec`; `--disable-sandbox` is only for this
+  restricted environment. CLT has no XCTest, so checks stay executable-based.
+- Still manual/pending: real quit/close interaction acceptance, VoiceOver and
+  light/dark review, user-provided SVG/MP4 samples, exFAT/network destinations,
+  Intel and macOS 14.
