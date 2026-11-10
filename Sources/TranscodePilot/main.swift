@@ -134,6 +134,9 @@ extension NSToolbarItem.Identifier {
         let (item, menu) = makeMenu(title: L("Help"))
         let help = menu.addItem(withTitle: L("TranscodePilot Help"), action: #selector(showHelp), keyEquivalent: "?")
         help.target = self
+        menu.addItem(.separator())
+        let github = menu.addItem(withTitle: L("GitHub Repository"), action: #selector(openRepository), keyEquivalent: "")
+        github.target = self
         return item
     }
 
@@ -246,9 +249,33 @@ extension NSToolbarItem.Identifier {
 
     @objc func about() {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
-        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "TranscodePilot",
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        let credits = NSMutableAttributedString(
+            string: "PilotFoundry · MIT\n" + L("Local media conversion") + "\n",
+            attributes: [.paragraphStyle: paragraph]
+        )
+        credits.append(NSAttributedString(
+            string: ProjectLinks.repositoryDisplay,
+            attributes: [.link: ProjectLinks.repository,
+                         .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
+                         .paragraphStyle: paragraph]
+        ))
+        credits.append(NSAttributedString(
+            string: "\nFFmpeg / librsvg: external development dependencies",
+            attributes: [.paragraphStyle: paragraph]
+        ))
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .applicationName: "TranscodePilot",
             .applicationVersion: version,
-            .credits: NSAttributedString(string: "PilotFoundry · MIT\n" + L("Local media conversion") + "\nFFmpeg / librsvg: external development dependencies")])
+            .version: build,
+            .credits: credits
+        ])
+    }
+
+    @objc private func openRepository() {
+        NSWorkspace.shared.open(ProjectLinks.repository)
     }
 
     func application(_ sender: NSApplication, openFiles filenames: [String]) {

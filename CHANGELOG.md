@@ -23,6 +23,8 @@
 ### App and design
 
 - Native toolbar, app menu, File/Window/Help menus, branded Dock icon.
+- About panel shows `CFBundleShortVersionString (CFBundleVersion)`, copyright and a
+  clickable GitHub repository link; Help also exposes the repository link.
 - Queue counts, stable drop ordering, retry/reconvert, clear actions, bounded
   thumbnails and inline result preview.
 - Real conversion progress: FFmpeg progress for MP3, stage progress for
@@ -35,6 +37,9 @@
   verification, ZIP + SHA256 packaging and GitHub Actions CI workflow.
 - Ad-hoc signed preview only; not notarized. External FFmpeg/librsvg are not
   bundled.
+- Open-source hygiene: code of conduct, issue/PR templates, Dependabot,
+  governance/privacy/FAQ/roadmap, third-party notices and an open-source readiness
+  review.
 
 ### Known limitations
 

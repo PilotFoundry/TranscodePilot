@@ -279,3 +279,13 @@ development verification aid, not an application dependency.
 - Queue rows and the bottom bar show a determinate bar, percent and phase label;
   the bottom bar keeps Cancel accessible. AX labels include the percentage.
 - Checks assert monotonic progress reaching completion for image and audio paths.
+
+## About and open-source hygiene — 2026-11-10
+
+- About panel shows the plist version/build, copyright and a clickable
+  `TPProjectURL` GitHub link; Help adds a Repository item. The canonical URL is
+  `https://github.com/PilotFoundry/transcodepilot`.
+- Added CODE_OF_CONDUCT, issue forms, PR template, Dependabot, editorconfig,
+  GOVERNANCE, PRIVACY, FAQ, ROADMAP, THIRD_PARTY_NOTICES and OPEN_SOURCE review.
+- The local checkout still has no Git remote; repository publication, tags/Releases,
+  branch protection and private security reporting remain external blockers.

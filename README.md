@@ -1,7 +1,15 @@
 # TranscodePilot
 
+[![CI](https://github.com/PilotFoundry/transcodepilot/actions/workflows/ci.yml/badge.svg)](https://github.com/PilotFoundry/transcodepilot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Development preview](https://img.shields.io/badge/version-0.1.0_dev_preview-orange.svg)](CHANGELOG.md)
+
 Local image and audio conversion for macOS, by **PilotFoundry**.
 Version **0.1.0 — development preview**. Independent of SwitchPilot.
+
+Canonical source: <https://github.com/PilotFoundry/transcodepilot>.
+The current local checkout has no configured remote; repository publication is
+tracked as an external release blocker in [docs/RELEASE.md](docs/RELEASE.md).
 
 [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md)
 
@@ -78,7 +86,11 @@ then quits; the window cannot be closed while a conversion is running.
 See [product principles](docs/CORE.md), [design direction](docs/DESIGN.md),
 [checks](docs/TESTING.md), [implementation checklist](docs/IMPLEMENTATION.md),
 [release engineering](docs/RELEASE.md), [changelog](CHANGELOG.md),
-[contributing](CONTRIBUTING.md), [security](SECURITY.md) and [support](SUPPORT.md).
+[contributing](CONTRIBUTING.md), [code of conduct](CODE_OF_CONDUCT.md),
+[security](SECURITY.md), [support](SUPPORT.md), [FAQ](FAQ.md),
+[roadmap](ROADMAP.md), [governance](GOVERNANCE.md), [privacy](PRIVACY.md),
+[third-party notices](THIRD_PARTY_NOTICES.md) and the
+[open-source readiness review](docs/OPEN_SOURCE.md).
 
 ## Engines and licensing
 

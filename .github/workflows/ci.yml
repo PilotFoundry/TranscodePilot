@@ -3,6 +3,14 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-verify:
@@ -13,6 +21,10 @@ jobs:
         run: brew install ffmpeg librsvg
       - name: Show engine versions
         run: make doctor
+      - name: Validate shell scripts and metadata inputs
+        run: |
+          for script in scripts/*; do sh -n "$script"; done
+          ruby -e 'require "yaml"; YAML.load_file(".github/workflows/ci.yml"); puts "CI YAML OK"'
       - name: Build and run checks
         run: make check
       - name: Build app bundle

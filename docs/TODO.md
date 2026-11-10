@@ -38,7 +38,7 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
 
 All locally actionable P0/P1/P2 work and the D1–D8 design pass are implemented,
 tested and documented. Local evidence: `make check` (4 PASS groups), `make app`,
-`make verify` (101 keys × 4 tables), `make release`/`make package` (ZIP + SHA256),
+`make verify` (102 keys × 4 tables), `make release`/`make package` (ZIP + SHA256),
 D1 screenshot matrix, AX-label and Cmd+Return keyboard pass, in-flight bitmap/SVG
 cancel, graceful quit during conversion, 1.2–1.29 GB real MP4/MKV conversions and
 an effects visual pass.

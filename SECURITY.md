@@ -25,7 +25,8 @@ telemetry, has no accounts and runs no background service.
 
 ## Reporting
 
-This is a personal development preview without a hosted security program. For a
-local security issue, keep the report private until the owner has reviewed it;
-include the app version, macOS version, a minimal reproducer and whether a
-network or filesystem boundary was crossed.
+The local checkout has no configured remote. When the repository is published,
+enable GitHub private vulnerability reporting and use that channel; otherwise
+report privately to the maintainer and keep details private until reviewed.
+Include the app version, macOS version, a minimal reproducer and whether a network
+or filesystem boundary was crossed. Do not attach personal media or credentials.

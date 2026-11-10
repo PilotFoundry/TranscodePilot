@@ -21,6 +21,16 @@ This writes `.build/release/TranscodePilot-<version>-<arch>.zip` and `.sha256`.
 `make verify` checks plist metadata, MKV registration, four localization tables,
 bundle cleanliness, ad-hoc signature and architecture.
 
+## Versioning and tags
+
+- `CFBundleShortVersionString` is the semantic release version; `CFBundleVersion`
+  is a monotonically increasing build number.
+- A release updates `Info.plist`, `CHANGELOG.md` and this acceptance record, then
+  tags the commit `vX.Y.Z` after CI/verification passes.
+- Current preview: `0.1.0` build `1`; no tags/Releases exist because the repository
+  has not been published.
+- Never move or force-push a published tag; publish checksums with the artifact.
+
 ## Manual install check
 
 1. Unzip the artifact and confirm the app launches.
@@ -47,7 +57,7 @@ bundle cleanliness, ad-hoc signature and architecture.
 
 - `make check`: PASS (4 groups).
 - `make app`: PASS; ad-hoc signature verified.
-- `make verify`: PASS; 101 localization keys × 4 tables; MKV document type present.
+- `make verify`: PASS; 102 localization keys × 4 tables; MKV document type present.
 - `make release` / `make package`: PASS; ZIP + SHA256 generated and re-verified.
 - GUI: MKV, real 1.29 GB MKV, real 1.2 GB MP4, SVG sizing, huge-file MP3, effects
   visual pass, in-flight bitmap/SVG cancel, corrupt failure/recovery, close-alert

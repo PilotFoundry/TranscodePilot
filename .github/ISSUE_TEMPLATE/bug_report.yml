@@ -1,0 +1,70 @@
+name: Bug report
+description: Report a conversion, UI or reliability defect
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not attach personal photos, videos, meeting recordings or other private
+        files to a public issue. Use a minimal synthetic reproducer instead.
+  - type: input
+    id: version
+    attributes:
+      label: TranscodePilot version
+      description: From About or Info.plist (for example 0.1.0 (1))
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS and architecture
+      placeholder: macOS 27.2, Apple Silicon
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - SVG sizing / rendering
+        - Bitmap conversion
+        - MP4/MKV audio extraction
+        - Queue/UI
+        - Error/recovery
+        - Release/build
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use a synthetic or redacted input; describe the exact settings.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and diagnostics
+      description: Include app-owned error text and relevant English engine detail, with local paths removed.
+  - type: input
+    id: engines
+    attributes:
+      label: Engine versions
+      description: Output of `make doctor` (ffmpeg, ffprobe, rsvg-convert)
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I removed personal data and absolute paths from this report.
+          required: true
+        - label: I searched existing issues.
+          required: true

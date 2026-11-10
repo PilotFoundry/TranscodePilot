@@ -1,6 +1,10 @@
 # Contributing
 
-TranscodePilot is a local macOS SwiftUI/AppKit app by PilotFoundry.
+TranscodePilot is a local macOS SwiftUI/AppKit app by PilotFoundry. By
+participating, you agree to follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Use the issue forms and PR checklist; no CLA is required and contributions are
+accepted under the MIT license. See [GOVERNANCE.md](GOVERNANCE.md) for decision
+making and release authority.
 
 ## Build
 
@@ -52,4 +56,5 @@ ZIP and SHA256 under `.build/release/`.
 ## Release
 
 Follow `docs/RELEASE.md`. Do not claim signed/notarized or clean-Mac statuses
-without the corresponding credentials and evidence.
+without the corresponding credentials and evidence. Version bumps update
+`Info.plist`, `CHANGELOG.md` and the release record; tags follow `vX.Y.Z`.

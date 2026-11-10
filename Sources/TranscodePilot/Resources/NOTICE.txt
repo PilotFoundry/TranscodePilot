@@ -1,1 +1,6 @@
 TranscodePilot — PilotFoundry. Local media conversion for macOS.
+Copyright (c) 2026 PilotFoundry contributors.
+Application source: MIT (see LICENSE).
+FFmpeg/ffprobe and librsvg are external, separately installed tools with their own
+licenses; they are not bundled in this development preview.
+See THIRD_PARTY_NOTICES.md in the source repository for the current audit.
