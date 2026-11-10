@@ -59,7 +59,7 @@ then quits; the window cannot be closed while a conversion is running.
 - SVG validation is a coarse local policy, not a general renderer sandbox; the
   SVG renderer runs as a separate local process.
 - JPEG/PNG output does not preserve EXIF, GPS, HDR, animation or original profiles.
-- Error details from conversion engines currently remain in English.
+- App-owned errors are localized with recovery actions (retry / choose another output folder); engine details may remain in English.
 
 See [product principles](docs/CORE.md), [design direction](docs/DESIGN.md),
 [checks](docs/TESTING.md), and [implementation checklist](docs/IMPLEMENTATION.md).

@@ -183,3 +183,14 @@ development verification aid, not an application dependency.
   bounded probe size/duration; corrupt MP4/MKV containers are rejected by checks.
 - Residual risk remains documented: SVG validation is a coarse local policy, not a
   general sandbox around the external renderer.
+
+## Error UX and recovery — 2026-11-10
+
+- Core failures now carry a typed `ConversionErrorCode` and optional technical
+  detail. App-owned text is localized in en / zh-Hans / zh-Hant / ja; engine stderr
+  remains English detail by policy. A disk-full publication failure has its own
+  code, distinct from output-folder permission and volume-support failures.
+- Failed items show Retry; publication failures additionally offer Choose Output
+  Folder. Validation errors remain inline and disable Convert.
+- GUI acceptance: a corrupt MP4 produced the localized “转换引擎失败。” message with
+  English engine detail and a working Retry button.

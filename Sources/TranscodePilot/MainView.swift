@@ -151,6 +151,12 @@ struct MainView: View {
                 if let error = item.error {
                     Label(L("Failed"), systemImage: "exclamationmark.triangle").foregroundStyle(.red)
                     Text(error).font(.caption).textSelection(.enabled)
+                    HStack(spacing: Design.Spacing.xs) {
+                        Button(L("Retry")) { model.retrySelected() }
+                        if item.failureCode == .outputNotWritable || item.failureCode == .outputVolumeUnsupported {
+                            Button(L("Choose output folder")) { model.chooseFolder() }
+                        }
+                    }
                 }
                 if let output = item.output {
                     Text(L("Exported")).font(.callout.weight(.medium))

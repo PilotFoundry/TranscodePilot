@@ -18,24 +18,24 @@ final class SVGDocument: NSObject, XMLParserDelegate {
 
     static func validate(_ data: Data) throws -> CGSize {
         guard data.count <= 20_000_000, let text = String(data: data, encoding: .utf8) else {
-            throw ConversionError.message("SVG must be UTF-8 and smaller than 20 MB.")
+            throw ConversionError.code(.inputTooLarge, detail: "SVG must be UTF-8 and smaller than 20 MB.")
         }
         // External resources and CSS escapes are rejected rather than silently omitted.
         let lower = text.lowercased()
         for token in ["<!doctype", "<!entity", "@import", "@font-face", "\\", "xml-stylesheet"] {
-            if lower.contains(token) { throw ConversionError.message("SVG contains unsupported or external resources: \(token)") }
+            if lower.contains(token) { throw ConversionError.code(.externalSVGResource, detail: "SVG contains unsupported or external resources: \(token)") }
         }
-        guard !hasExternalURL(text) else { throw ConversionError.message("SVG external CSS resources are not supported.") }
+        guard !hasExternalURL(text) else { throw ConversionError.code(.externalSVGResource, detail: "SVG external CSS resources are not supported.") }
         let delegate = SVGDocument()
         let parser = XMLParser(data: data)
         parser.shouldResolveExternalEntities = false
         parser.shouldProcessNamespaces = true
         parser.delegate = delegate
         guard parser.parse(), delegate.root, delegate.failure == nil else {
-            throw ConversionError.message(delegate.failure ?? "Invalid SVG document.")
+            throw ConversionError.code(.invalidSVG, detail: delegate.failure ?? "Invalid SVG document.")
         }
         guard let size = delegate.size, size.width.isFinite, size.height.isFinite, size.width > 0, size.height > 0 else {
-            throw ConversionError.message(delegate.failure ?? "SVG needs positive pixel dimensions or a viewBox.")
+            throw ConversionError.code(.invalidSVG, detail: delegate.failure ?? "SVG needs positive pixel dimensions or a viewBox.")
         }
         return size
     }

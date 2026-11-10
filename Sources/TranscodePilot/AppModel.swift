@@ -26,6 +26,7 @@ struct ConversionItem: Identifiable {
     var status = "Ready"
     var output: URL?
     var error: String?
+    var failureCode: ConversionErrorCode?
     var estimate: ConversionEstimate?
     var validationError: String?
 
@@ -78,7 +79,7 @@ struct ConversionItem: Identifiable {
             var metadata: SourceMetadata?
             var inspectionError: String?
             do { metadata = try SourceInspector.inspect(url) }
-            catch { inspectionError = error.localizedDescription }
+            catch { inspectionError = localizedErrorText(error) }
             var item = ConversionItem(source: url, options: options, metadata: metadata)
             item.validationError = inspectionError
             items.append(item)
@@ -116,6 +117,7 @@ struct ConversionItem: Identifiable {
         items[index].options = options
         items[index].output = nil
         items[index].error = nil
+        items[index].failureCode = nil
         items[index].status = "Ready"
         refreshValidation(at: index)
         let defaults = UserDefaults.standard
@@ -151,6 +153,7 @@ struct ConversionItem: Identifiable {
                 guard let index = items.firstIndex(where: { $0.id == job.id }) else { continue }
                 items[index].status = "Converting"
                 items[index].error = nil
+                items[index].failureCode = nil
                 do {
                     let result = try await Task.detached { try await Converter.convert(job.source, to: directory, options: job.options) }.valueWithCancellation()
                     items[index].output = result
@@ -160,7 +163,8 @@ struct ConversionItem: Identifiable {
                     break
                 } catch {
                     items[index].status = "Failed"
-                    items[index].error = error.localizedDescription
+                    items[index].error = localizedErrorText(error)
+                    items[index].failureCode = (error as? ConversionError)?.errorCode
                 }
             }
             running = false
@@ -169,6 +173,15 @@ struct ConversionItem: Identifiable {
     }
 
     func cancel() { worker?.cancel() }
+
+    func retrySelected() {
+        guard !running, let index = selectedIndex else { return }
+        guard items[index].status == "Failed" || items[index].status == "Cancelled" else { return }
+        items[index].status = "Ready"
+        items[index].error = nil
+        items[index].failureCode = nil
+        start()
+    }
     func removeSelected() {
         guard !running else { return }
         items.removeAll { $0.id == selection }
@@ -197,7 +210,7 @@ struct ConversionItem: Identifiable {
             items[index].validationError = nil
         } catch {
             items[index].estimate = nil
-            items[index].validationError = error.localizedDescription
+            items[index].validationError = localizedErrorText(error)
         }
     }
 }

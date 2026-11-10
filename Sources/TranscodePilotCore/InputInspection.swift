@@ -16,10 +16,10 @@ public enum InputFile {
               let values = try? resolved.resourceValues(forKeys: [.isRegularFileKey, .isReadableKey, .fileSizeKey]),
               values.isRegularFile == true,
               values.isReadable == true else {
-            throw ConversionError.message("This item is not a readable regular file.")
+            throw ConversionError.code(.unreadableSource, detail: "This item is not a readable regular file.")
         }
         guard let size = values.fileSize, size > 0 else {
-            throw ConversionError.message("The source file is empty.")
+            throw ConversionError.code(.emptySource, detail: "The source file is empty.")
         }
         return resolved
     }
@@ -29,7 +29,7 @@ public enum InputFile {
         let resolved = try regularFileURL(url)
         guard let values = try? resolved.resourceValues(forKeys: [.fileSizeKey]),
               let size = values.fileSize, size <= limit else {
-            throw ConversionError.message(limitMessage)
+            throw ConversionError.code(.inputTooLarge, detail: limitMessage)
         }
         return try Data(contentsOf: resolved)
     }
@@ -64,7 +64,7 @@ public enum SourceInspector {
     public static func inspect(_ input: URL) throws -> SourceMetadata {
         let formats = Converter.formats(for: input)
         guard !formats.isEmpty else {
-            throw ConversionError.message("Unsupported input format.")
+            throw ConversionError.code(.unsupportedFormat, detail: "Unsupported input format.")
         }
         let resolved = try InputFile.regularFileURL(input)
         if formats == [.mp3] {
@@ -85,7 +85,7 @@ public enum SourceInspector {
               let sourceHeight = properties[kCGImagePropertyPixelHeight] as? Int,
               sourceWidth > 0, sourceHeight > 0,
               Double(sourceWidth) * Double(sourceHeight) <= 80_000_000 else {
-            throw ConversionError.message("Cannot read this image.")
+            throw ConversionError.code(.invalidImage, detail: "Cannot read this image.")
         }
         let orientation = properties[kCGImagePropertyOrientation] as? Int ?? 1
         let displayedWidth = (5...8).contains(orientation) ? sourceHeight : sourceWidth
@@ -119,25 +119,25 @@ public enum ConversionPlanner {
             return nil
         case .pixels(let sourceWidth, let sourceHeight):
             guard sourceWidth > 0, sourceHeight > 0 else {
-                throw ConversionError.message("Source dimensions are invalid.")
+                throw ConversionError.code(.inputLimit, detail: "Source dimensions are invalid.")
             }
             let width = options.width > 0 ? options.width : Int(Double(sourceWidth) * options.scale)
             let height = Int((Double(sourceHeight) * Double(width) / Double(max(1, sourceWidth))).rounded())
             guard width > 0, height > 0, width <= 16_384, height <= 16_384,
                   Double(width) * Double(height) <= 40_000_000,
                   Double(sourceWidth) * Double(sourceHeight) <= 80_000_000 else {
-                throw ConversionError.message("Image exceeds the 40 megapixel output or 80 megapixel input limit.")
+                throw ConversionError.code(.outputLimit, detail: "Image exceeds the 40 megapixel output or 80 megapixel input limit.")
             }
             return ConversionEstimate(width: width, height: height)
         case .svg(let sourceWidth, let sourceHeight):
             guard sourceWidth.isFinite, sourceHeight.isFinite, sourceWidth > 0, sourceHeight > 0 else {
-                throw ConversionError.message("SVG needs positive pixel dimensions or a viewBox.")
+                throw ConversionError.code(.invalidSVG, detail: "SVG needs positive pixel dimensions or a viewBox.")
             }
             let width = options.width > 0 ? Double(options.width) : sourceWidth * options.scale
             let height = sourceHeight * width / sourceWidth
             guard width >= 1, height >= 1, width <= 16_384, height <= 16_384,
                   width * height <= 40_000_000 else {
-                throw ConversionError.message("SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
+                throw ConversionError.code(.outputLimit, detail: "SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
             }
             return ConversionEstimate(width: Int(width.rounded()), height: Int(height.rounded()))
         }

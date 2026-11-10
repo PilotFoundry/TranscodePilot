@@ -26,9 +26,10 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
   in `Fixtures/SVGSizing/` covers physical units, viewBox/percentage/missing
   dimensions, explicit width and fractional output.
 - `make check` has four PASS groups; MKV → MP3 and SVG sizing are covered.
-- Remaining P0 blockers: SVG trust boundary, in-flight SVG/bitmap cancellation
-  acceptance, non-APFS publication, app-owned error UX/localization,
-  MP4/FFmpeg trust boundary, and real-file visual acceptance of effects.
+- Remaining P0 blockers: SVG trust residual risk, in-flight SVG/bitmap
+  cancellation acceptance, non-APFS real-volume acceptance, huge-file MP4
+  acceptance, and real-file visual acceptance of effects. App-owned error UX,
+  typed failures and recovery actions are implemented.
 - Design/UIUX is now a first-class workstream; its baseline and review method are
   in `docs/DESIGN.md`.
 
@@ -48,6 +49,8 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
 - [x] MKV → MP3 audio extraction through the same first-audio-track path.
 - [x] SVG sizing rules: 96 dpi units, viewBox/percentage/missing dimensions,
   width-only explicit sizing, zoom scaling and requested-vs-actual checks.
+- [x] Typed app failures, localized app-owned errors, English engine detail and
+  Retry / choose-output-folder recovery actions.
 - [x] Ad-hoc app build/signature; four `make check` PASS groups; doctor pass.
 
 ## Next landing plan
@@ -145,9 +148,11 @@ repository, domain/trademark, Developer ID, Intel/macOS 14 hardware.
   and rejects destinations whose volume does not report hard-link support. APFS
   tests pass; real exFAT/FAT/network-volume acceptance is still pending because a
   local disk image could not be mounted in this environment.
-- [ ] **User-friendly failures:** localize app-owned errors, distinguish missing
-  engine/no audio/invalid SVG/permission/disk-full cases, and offer a recovery
-  action. Engine detail may remain English; app-owned text must not.
+- [x] **User-friendly failures:** typed `ConversionErrorCode` values distinguish
+  settings/input/missing-engine/no-audio/invalid-SVG/permission/disk-full/output
+  verification cases; app-owned text is localized in four languages, engine
+  stderr remains English detail, and failed items offer Retry plus Choose Output
+  Folder for publication failures. Corrupt-container GUI acceptance completed.
 - [ ] **MP4/FFmpeg trust boundary and resource limits:** protocol whitelist and
   explicit demuxers are in place; probe size/duration and timeouts are now bounded,
   and corrupt MP4/MKV containers are covered. A real huge-file acceptance and

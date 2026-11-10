@@ -32,7 +32,7 @@ public enum ProcessRunner {
         do {
             while process.isRunning {
                 try Task.checkCancellation()
-                if Date() > deadline { throw ConversionError.message("Conversion timed out.") }
+                if Date() > deadline { throw ConversionError.code(.timeout, detail: "Conversion timed out.") }
                 try await Task.sleep(nanoseconds: 50_000_000)
             }
         } catch {
@@ -53,7 +53,7 @@ public enum ProcessRunner {
             let handle = try FileHandle(forReadingFrom: errorURL)
             defer { try? handle.close() }
             let detail = String(data: try handle.read(upToCount: 4096) ?? Data(), encoding: .utf8) ?? ""
-            throw ConversionError.message(detail.isEmpty ? "Conversion engine failed." : detail)
+            throw ConversionError.code(.engineFailure, detail: detail.isEmpty ? "Conversion engine failed." : detail)
         }
         return try Data(contentsOf: outputURL)
     }

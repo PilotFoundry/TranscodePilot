@@ -51,6 +51,9 @@ Manual acceptance before a public release:
 - Intel, macOS 14, portable engine packaging, notices and Gatekeeper first launch.
 
 GUI acceptance (2026-11-10): `agent-desktop` 1.2.0 exercised the built bundle via
+its accessibility tree, including the localized corrupt-container failure and
+Retry recovery button; app-owned errors displayed Chinese text while engine
+detail remained English. The tool also verified:
 its accessibility tree. It verified real batch conversion (PNG outputs, MP3 codec
 and 600.003 s duration), inline width/limit validation with disabled Convert,
 estimated output text, the conversion-in-progress close alert, cancel during a

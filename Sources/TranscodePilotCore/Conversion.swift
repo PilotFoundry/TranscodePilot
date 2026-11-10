@@ -3,11 +3,6 @@ import CoreGraphics
 import ImageIO
 import UniformTypeIdentifiers
 
-public enum ConversionError: Error, LocalizedError {
-    case message(String)
-    public var errorDescription: String? { if case .message(let text) = self { return text }; return nil }
-}
-
 public enum OutputFormat: String, CaseIterable, Identifiable, Sendable {
     case png, jpg, mp3
     public var id: String { rawValue }
@@ -27,7 +22,7 @@ public struct ConversionOptions: Sendable {
               scale.isFinite, (0.1...8).contains(scale),
               (0...1).contains(jpegQuality),
               [128, 192, 320].contains(audioBitrate) else {
-            throw ConversionError.message("Unsupported format or invalid conversion settings.")
+            throw ConversionError.code(.invalidSettings, detail: "Unsupported format or invalid conversion settings.")
         }
     }
 }
@@ -45,19 +40,19 @@ public enum Converter {
         try options.validate()
         try Task.checkCancellation()
         guard formats(for: input).contains(options.format) else {
-            throw ConversionError.message("Unsupported format or invalid conversion settings.")
+            throw ConversionError.code(.invalidSettings, detail: "Unsupported format or invalid conversion settings.")
         }
         let fm = FileManager.default
         let source = try InputFile.regularFileURL(input)
         let resolvedDirectory = directory.resolvingSymlinksInPath()
         let directoryValues = try? resolvedDirectory.resourceValues(forKeys: [.isDirectoryKey, .volumeSupportsHardLinksKey])
         guard directoryValues?.isDirectory == true, fm.isWritableFile(atPath: directory.path) else {
-            throw ConversionError.message("Source or output folder is not accessible.")
+            throw ConversionError.code(.outputNotWritable, detail: "Source or output folder is not accessible.")
         }
         // Publication uses link() for non-overwriting atomic names. Reject
         // destinations whose filesystem cannot provide that guarantee.
         guard directoryValues?.volumeSupportsHardLinks == true else {
-            throw ConversionError.message("Choose an output folder on a volume that supports hard links (for example APFS).")
+            throw ConversionError.code(.outputVolumeUnsupported, detail: "Choose an output folder on a volume that supports hard links (for example APFS).")
         }
         let temporary = directory.appendingPathComponent(".transcodepilot-\(UUID())", isDirectory: true)
         try fm.createDirectory(at: temporary, withIntermediateDirectories: false)
@@ -65,7 +60,7 @@ public enum Converter {
         let result = temporary.appendingPathComponent("output.\(options.format.rawValue)")
         if options.format == .mp3 {
             guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else {
-                throw ConversionError.message("Install FFmpeg: brew install ffmpeg")
+                throw ConversionError.code(.missingEngine, detail: "Install FFmpeg: brew install ffmpeg")
             }
             // Pin the demuxer so a renamed/ambiguous container is not probed as
             // an unrelated format. MKV and MP4 take the same audio-only path.
@@ -74,20 +69,20 @@ public enum Converter {
                                 "-probesize", "64M", "-analyzeduration", "100000000",
                                 "-f", demuxer]
             let info = try await ProcessRunner.run(probe, probeOptions + ["-select_streams", "a:0", "-show_entries", "stream=index", "-of", "csv=p=0", source.path], timeout: 60)
-            guard !info.isEmpty else { throw ConversionError.message("This video has no audio track.") }
+            guard !info.isEmpty else { throw ConversionError.code(.noAudioTrack, detail: "This video has no audio track.") }
             _ = try await ProcessRunner.run(ffmpeg, ["-nostdin", "-v", "error", "-n", "-protocol_whitelist", "file,pipe",
                                                       "-probesize", "64M", "-analyzeduration", "100000000",
                                                       "-f", demuxer, "-i", source.path, "-map", "0:a:0", "-vn",
                                                       "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600)
             let verification = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", result.path], timeout: 60)
             guard let duration = Double(String(decoding: verification, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)), duration > 0 else {
-                throw ConversionError.message("Output audio could not be verified.")
+                throw ConversionError.code(.outputVerification, detail: "Output audio could not be verified.")
             }
         } else {
             var sourceURL = source
             if input.pathExtension.lowercased() == "svg" {
                 guard let renderer = Tools.find("rsvg-convert") else {
-                    throw ConversionError.message("Install SVG renderer: brew install librsvg")
+                    throw ConversionError.code(.missingEngine, detail: "Install SVG renderer: brew install librsvg")
                 }
                 let data = try InputFile.readData(
                     input,
@@ -105,7 +100,7 @@ public enum Converter {
                     renderHeight = (svgSize.height * renderWidth / svgSize.width).rounded()
                     guard renderWidth >= 1, renderHeight >= 1, renderWidth <= 16_384, renderHeight <= 16_384,
                           renderWidth * renderHeight <= 40_000_000 else {
-                        throw ConversionError.message("SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
+                        throw ConversionError.code(.outputLimit, detail: "SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
                     }
                     args += ["--keep-aspect-ratio", "--width", String(options.width)]
                 } else {
@@ -113,7 +108,7 @@ public enum Converter {
                     renderHeight = (svgSize.height * options.scale).rounded()
                     guard renderWidth >= 1, renderHeight >= 1, renderWidth <= 16_384, renderHeight <= 16_384,
                           renderWidth * renderHeight <= 40_000_000 else {
-                        throw ConversionError.message("SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
+                        throw ConversionError.code(.outputLimit, detail: "SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
                     }
                     args += ["--zoom", String(options.scale)]
                 }
@@ -130,16 +125,16 @@ public enum Converter {
                   let sourceHeight = properties[kCGImagePropertyPixelHeight] as? Int,
                   sourceWidth > 0, sourceHeight > 0,
                   Double(sourceWidth) * Double(sourceHeight) <= 80_000_000 else {
-                throw ConversionError.message("Cannot read this image.")
+                throw ConversionError.code(.invalidImage, detail: "Cannot read this image.")
             }
             if input.pathExtension.lowercased() == "svg", options.width > 0, sourceWidth != options.width {
-                throw ConversionError.message("SVG renderer produced an unexpected width.")
+                throw ConversionError.code(.outputVerification, detail: "SVG renderer produced an unexpected width.")
             }
             let orientation = properties[kCGImagePropertyOrientation] as? Int ?? 1
             let displayedWidth = (5...8).contains(orientation) ? sourceHeight : sourceWidth
             let displayedHeight = (5...8).contains(orientation) ? sourceWidth : sourceHeight
             guard displayedWidth > 0, displayedHeight > 0 else {
-                throw ConversionError.message("Source dimensions are invalid.")
+                throw ConversionError.code(.inputLimit, detail: "Source dimensions are invalid.")
             }
             let isSVG = input.pathExtension.lowercased() == "svg"
             let width = isSVG ? displayedWidth : (options.width > 0 ? options.width : Int(Double(displayedWidth) * options.scale))
@@ -147,19 +142,19 @@ public enum Converter {
             guard width > 0, height > 0, width <= 16_384, height <= 16_384,
                   Double(width) * Double(height) <= 40_000_000,
                   Double(sourceWidth) * Double(sourceHeight) <= 80_000_000 else {
-                throw ConversionError.message("Image exceeds the 40 megapixel output or 80 megapixel input limit.")
+                throw ConversionError.code(.outputLimit, detail: "Image exceeds the 40 megapixel output or 80 megapixel input limit.")
             }
             try Task.checkCancellation()
             let thumbnail: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceCreateThumbnailWithTransform: true,
                 kCGImageSourceThumbnailMaxPixelSize: max(width, height)]
             guard let image = CGImageSourceCreateThumbnailAtIndex(sourceImage, 0, thumbnail as CFDictionary) else {
-                throw ConversionError.message("Cannot decode this image.")
+                throw ConversionError.code(.invalidImage, detail: "Cannot decode this image.")
             }
             try Task.checkCancellation()
             guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
                 space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
-                throw ConversionError.message("Cannot allocate output image.")
+                throw ConversionError.code(.invalidImage, detail: "Cannot allocate output image.")
             }
             let rect = CGRect(x: 0, y: 0, width: width, height: height)
             if options.whiteBackground || options.format == .jpg {
@@ -170,12 +165,12 @@ public enum Converter {
             try Task.checkCancellation()
             guard let rendered = context.makeImage(), let destination = CGImageDestinationCreateWithURL(result as CFURL,
                 (options.format == .png ? UTType.png.identifier : UTType.jpeg.identifier) as CFString, 1, nil) else {
-                throw ConversionError.message("Cannot create image output.")
+                throw ConversionError.code(.invalidImage, detail: "Cannot create image output.")
             }
             CGImageDestinationAddImage(destination, rendered, [kCGImageDestinationLossyCompressionQuality: options.jpegQuality] as CFDictionary)
             guard CGImageDestinationFinalize(destination), let check = CGImageSourceCreateWithURL(result as CFURL, nil),
                   let decoded = CGImageSourceCreateImageAtIndex(check, 0, nil), decoded.width == width, decoded.height == height else {
-                throw ConversionError.message("Output image verification failed.")
+                throw ConversionError.code(.outputVerification, detail: "Output image verification failed.")
             }
             try Task.checkCancellation()
         }
@@ -186,8 +181,11 @@ public enum Converter {
             let target = directory.appendingPathComponent("\(stem)\(suffix).\(options.format.rawValue)")
             // link() publishes a complete file atomically and refuses to overwrite an existing path.
             if link(result.path, target.path) == 0 { return target }
-            if errno != EEXIST { throw ConversionError.message("Cannot save output: \(String(cString: strerror(errno)))") }
+            if errno == ENOSPC {
+                throw ConversionError.code(.diskFull, detail: "Cannot save output: \(String(cString: strerror(errno)))")
+            }
+            if errno != EEXIST { throw ConversionError.code(.outputNotWritable, detail: "Cannot save output: \(String(cString: strerror(errno)))") }
         }
-        throw ConversionError.message("Too many files with the same output name.")
+        throw ConversionError.code(.outputNotWritable, detail: "Too many files with the same output name.")
     }
 }
