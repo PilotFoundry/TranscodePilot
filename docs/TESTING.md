@@ -61,5 +61,14 @@ real-file visual acceptance of those effects is still pending. Not covered:
 SVG/bitmap in-flight cancellation, VoiceOver/light-dark, exFAT or network
 destinations, Intel and macOS 14.
 
+Design/UIUX acceptance is defined in `docs/DESIGN.md`. Before a public release:
+
+- Capture the screen/state matrix at 900×620 and 760×540, light and dark, in all
+  four locales (empty, queue, inspector, invalid, converting, failed, done, alert).
+- Score the six review lenses 0–2; no zeroes, and the primary flow plus error
+  states must score 2.
+- Complete a keyboard-only pass and a VoiceOver pass; record what was and was not
+  exercised. Build success is not visual acceptance.
+
 Only recorded automated checks count as exercised. Missing fonts may substitute;
 the app does not claim pixel equivalence with browsers or other SVG renderers.
