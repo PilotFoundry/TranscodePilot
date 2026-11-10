@@ -168,3 +168,18 @@ development verification aid, not an application dependency.
   format list and README are updated.
 - Verification: `make check` PASS; GUI converted a synthetic MKV → MP3 in about
   1.1 s; GUI sizing fixture rendered 96 × 48 px at 1× with the same estimate.
+
+## P0 hardening batch — 2026-11-10
+
+- SVG boundary: root namespace validation, additional animation/handler tags,
+  CDATA-aware style collection and self-contained CSS at-rules are now handled.
+  Added `Fixtures/SVGSecurity` with foreign-namespace, animation, discard and
+  external-href rejections plus a safe `@media` acceptance case.
+- Output publication: the destination volume must report hard-link support before
+  conversion starts; APFS temp/publication checks still pass. Real exFAT/network
+  volume acceptance remains outstanding because the local disk-image mount was
+  not available.
+- Media trust: ffprobe/ffmpeg use the protocol whitelist, explicit demuxer and
+  bounded probe size/duration; corrupt MP4/MKV containers are rejected by checks.
+- Residual risk remains documented: SVG validation is a coarse local policy, not a
+  general sandbox around the external renderer.

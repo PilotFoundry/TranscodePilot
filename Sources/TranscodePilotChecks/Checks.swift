@@ -118,6 +118,27 @@ func convertSizingFixture(_ name: String, width: Int = 0, scale: Double = 1, in 
     return try pixels(output)
 }
 
+func checkSVGSecurity(in folder: URL) async throws {
+    let safeURL = try fixtureURL("Fixtures/SVGSecurity/safe-media-query.svg")
+    var safeOptions = ConversionOptions()
+    safeOptions.format = .png
+    safeOptions.width = 100
+    let safeOutput = try await Converter.convert(safeURL, to: folder, options: safeOptions)
+    let safeImage = try pixels(safeOutput)
+    let safeCenter = try rgba(safeImage, x: 50, y: 50)
+    try expect(safeImage.width == 100 && safeImage.height == 100, "self-contained @media CSS remains accepted")
+    try expect(safeCenter.a > 0.5, "self-contained at-rule SVG renders nonblank")
+
+    for fixture in ["foreign-namespace-root.svg", "animate-motion.svg", "animate-color.svg",
+                    "discard.svg", "xlink-href.svg"] {
+        let url = try fixtureURL("Fixtures/SVGSecurity/\(fixture)")
+        var rejected = false
+        do { _ = try await Converter.convert(url, to: folder, options: ConversionOptions()) }
+        catch { rejected = true }
+        try expect(rejected, "trust-boundary fixture rejected: \(fixture)")
+    }
+}
+
 func checkSVGSizing(in folder: URL) async throws {
     let units = try await convertSizingFixture("units-mm.svg", scale: 1, in: folder)
     try expect(units.width == 96 && units.height == 48, "physical units resolve at 96 dpi")
@@ -300,6 +321,7 @@ func checkSVGSizing(in folder: URL) async throws {
             try expect(cancelledBeforePublishing, "cancelled conversion stops before publishing")
             try await checkSVGEffects(in: folder)
             try await checkSVGSizing(in: folder)
+            try await checkSVGSecurity(in: folder)
 
             guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else { throw ConversionError.message("FFmpeg required for checks") }
             let video = folder.appendingPathComponent("sample.mp4")
@@ -309,6 +331,16 @@ func checkSVGSizing(in folder: URL) async throws {
             let mp3 = try await Converter.convert(video, to: folder, options: options)
             let audioInfo = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "stream=codec_name", "-of", "csv=p=0", mp3.path])
             try expect(String(decoding: audioInfo, as: UTF8.self).contains("mp3"), "MP4 audio encoded as MP3")
+            for (name, bytes) in [("corrupt.mp4", Data(repeating: 0x41, count: 4096)),
+                                  ("corrupt.mkv", Data(repeating: 0x42, count: 4096))] {
+                let corrupt = folder.appendingPathComponent(name)
+                try bytes.write(to: corrupt)
+                var rejected = false
+                do { _ = try await Converter.convert(corrupt, to: folder, options: options) }
+                catch { rejected = true }
+                try expect(rejected, "corrupt container rejected: \(name)")
+            }
+
             let silent = folder.appendingPathComponent("silent.mp4")
             _ = try await ProcessRunner.run(ffmpeg, ["-v", "error", "-i", video.path, "-an", "-c:v", "copy", silent.path])
             let mkv = folder.appendingPathComponent("sample.mkv")
@@ -332,10 +364,10 @@ func checkSVGSizing(in folder: URL) async throws {
             try expect(Date().timeIntervalSince(cancellationStart) < 3, "child process cancellation is prompt")
             let remaining = try FileManager.default.contentsOfDirectory(atPath: folder.path)
             try expect(!remaining.contains(where: { $0.hasPrefix(".transcodepilot-") }), "temporary outputs cleaned up")
-            print("PASS: MP4/MKV → MP3, missing audio, child process cancellation and temporary cleanup")
+            print("PASS: MP4/MKV → MP3, corrupt containers, missing audio, child process cancellation and temporary cleanup")
             print("PASS: SVG pixels, transparency, JPEG background, bitmap resize, collision safety, source preservation and unsafe input")
             print("PASS: input bounds, symlink source, cancelled conversion, planner estimates and preference sanitizing")
-            print("PASS: SVG effects fixtures (gradient, blur, color matrix, mask, clip-path, transparency) and sizing rules")
+            print("PASS: SVG effects, sizing and trust-boundary fixtures")
         } catch {
             fputs("\(error.localizedDescription)\n", stderr)
             exit(1)

@@ -12,6 +12,9 @@ checks:
 - MP3 codec, silent-video rejection, child-process cancellation grace, cancelled
   conversion before publication and sanitized stored preferences.
 - MKV audio extraction through the explicit matroska demuxer.
+- Corrupt MP4/MKV containers are rejected; media probing is bounded.
+- SVG security fixtures: foreign namespace, animation variants, discard and
+  external href are rejected; self-contained `@media` remains accepted.
 - SVG sizing fixtures: physical units at 96 dpi, viewBox-only, percentage,
   missing-one-dimension, fractional sizes, explicit requested width and rejection
   of unsupported percentage/missing-dimension documents.

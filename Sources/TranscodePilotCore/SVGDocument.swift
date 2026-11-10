@@ -29,6 +29,7 @@ final class SVGDocument: NSObject, XMLParserDelegate {
         let delegate = SVGDocument()
         let parser = XMLParser(data: data)
         parser.shouldResolveExternalEntities = false
+        parser.shouldProcessNamespaces = true
         parser.delegate = delegate
         guard parser.parse(), delegate.root, delegate.failure == nil else {
             throw ConversionError.message(delegate.failure ?? "Invalid SVG document.")
@@ -105,7 +106,7 @@ final class SVGDocument: NSObject, XMLParserDelegate {
         var width = resolved(widthLength, reference: viewWidth)
         var height = resolved(heightLength, reference: viewHeight)
 
-        if let viewBox, values.count == 4, values[2] > 0, values[3] > 0 {
+        if values.count == 4, values[2] > 0, values[3] > 0 {
             let vbWidth = values[2]
             let vbHeight = values[3]
             if width == nil && height == nil {
@@ -129,6 +130,11 @@ final class SVGDocument: NSObject, XMLParserDelegate {
         if name == "style" { inStyle = true; styleText = "" }
         if !root {
             guard name == "svg" else { failure = "Expected an SVG document."; parser.abortParsing(); return }
+            if let namespaceURI, !namespaceURI.isEmpty, namespaceURI != "http://www.w3.org/2000/svg" {
+                failure = "SVG root must use the SVG namespace."
+                parser.abortParsing()
+                return
+            }
             root = true
             if let size = Self.intrinsicSize(width: attributes["width"], height: attributes["height"],
                                              viewBox: attributes["viewBox"]) {
@@ -143,7 +149,8 @@ final class SVGDocument: NSObject, XMLParserDelegate {
                 return
             }
         }
-        if ["script", "foreignobject", "animate", "animatetransform", "set"].contains(name) {
+        if ["script", "foreignobject", "animate", "animatetransform", "animatecolor",
+            "animatemotion", "set", "discard", "handler", "listener"].contains(name) {
             failure = "SVG HTML, scripts and animations are not supported."; parser.abortParsing(); return
         }
         for (key, value) in attributes {
@@ -164,9 +171,17 @@ final class SVGDocument: NSObject, XMLParserDelegate {
         if inStyle { styleText += string }
     }
 
+    func parser(_ parser: XMLParser, foundCDATA CDATABlock: Data) {
+        if inStyle, let text = String(data: CDATABlock, encoding: .utf8) {
+            styleText += text
+        }
+    }
+
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         if elementName.lowercased().hasSuffix("style") {
-            if Self.hasExternalURL(styleText) || styleText.contains("\\") || styleText.contains("@") {
+            // @import/@font-face are rejected by the document-wide lexical scan;
+            // self-contained at-rules such as @media must remain usable.
+            if Self.hasExternalURL(styleText) || styleText.contains("\\") {
                 failure = "SVG external styles are not supported."; parser.abortParsing()
             }
             inStyle = false

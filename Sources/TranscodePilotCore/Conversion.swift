@@ -49,9 +49,15 @@ public enum Converter {
         }
         let fm = FileManager.default
         let source = try InputFile.regularFileURL(input)
-        let directoryValues = try? directory.resolvingSymlinksInPath().resourceValues(forKeys: [.isDirectoryKey])
+        let resolvedDirectory = directory.resolvingSymlinksInPath()
+        let directoryValues = try? resolvedDirectory.resourceValues(forKeys: [.isDirectoryKey, .volumeSupportsHardLinksKey])
         guard directoryValues?.isDirectory == true, fm.isWritableFile(atPath: directory.path) else {
             throw ConversionError.message("Source or output folder is not accessible.")
+        }
+        // Publication uses link() for non-overwriting atomic names. Reject
+        // destinations whose filesystem cannot provide that guarantee.
+        guard directoryValues?.volumeSupportsHardLinks == true else {
+            throw ConversionError.message("Choose an output folder on a volume that supports hard links (for example APFS).")
         }
         let temporary = directory.appendingPathComponent(".transcodepilot-\(UUID())", isDirectory: true)
         try fm.createDirectory(at: temporary, withIntermediateDirectories: false)
@@ -64,10 +70,16 @@ public enum Converter {
             // Pin the demuxer so a renamed/ambiguous container is not probed as
             // an unrelated format. MKV and MP4 take the same audio-only path.
             let demuxer = input.pathExtension.lowercased() == "mkv" ? "matroska" : "mov"
-            let info = try await ProcessRunner.run(probe, ["-v", "error", "-protocol_whitelist", "file,pipe", "-f", demuxer, "-select_streams", "a:0", "-show_entries", "stream=index", "-of", "csv=p=0", source.path])
+            let probeOptions = ["-v", "error", "-protocol_whitelist", "file,pipe",
+                                "-probesize", "64M", "-analyzeduration", "100000000",
+                                "-f", demuxer]
+            let info = try await ProcessRunner.run(probe, probeOptions + ["-select_streams", "a:0", "-show_entries", "stream=index", "-of", "csv=p=0", source.path], timeout: 60)
             guard !info.isEmpty else { throw ConversionError.message("This video has no audio track.") }
-            _ = try await ProcessRunner.run(ffmpeg, ["-nostdin", "-v", "error", "-n", "-protocol_whitelist", "file,pipe", "-f", demuxer, "-i", source.path, "-map", "0:a:0", "-vn", "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600)
-            let verification = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", result.path])
+            _ = try await ProcessRunner.run(ffmpeg, ["-nostdin", "-v", "error", "-n", "-protocol_whitelist", "file,pipe",
+                                                      "-probesize", "64M", "-analyzeduration", "100000000",
+                                                      "-f", demuxer, "-i", source.path, "-map", "0:a:0", "-vn",
+                                                      "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600)
+            let verification = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", result.path], timeout: 60)
             guard let duration = Double(String(decoding: verification, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)), duration > 0 else {
                 throw ConversionError.message("Output audio could not be verified.")
             }

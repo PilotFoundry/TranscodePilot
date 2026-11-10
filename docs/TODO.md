@@ -133,22 +133,25 @@ repository, domain/trademark, Developer ID, Intel/macOS 14 hardware.
 
 ## P0 — v0.1 release blockers (reliability/security)
 
-- [ ] **Audit SVG trust boundary:** validate namespace handling, decoded CSS,
-  CDATA/comments, URLs, XML entities and unsupported animation variants; explicitly
-  detect missing content where feasible. Test actual file/network resource denial.
-  Current lexical checks are not a general SVG sandbox.
+- [ ] **Audit SVG trust boundary:** namespace/root validation, animation variants,
+  CDATA-aware style handling and self-contained at-rules are now covered by
+  `Fixtures/SVGSecurity`; external URLs/scripts/entities remain rejected. Real
+  renderer file/network denial is still not proven — lexical checks are not a
+  general SVG sandbox; residual risk must stay documented.
 - [ ] **Cancel during actual conversions:** GUI cancel of FFmpeg is verified; add
   targeted SVG/bitmap in-flight cancellation acceptance and verify checks between
   decode/draw/encode stages.
-- [ ] **Output filesystem compatibility:** add safe non-overwriting publication for
-  exFAT/FAT/network volumes or reject unsupported destinations before processing.
-  Keep APFS atomic publication and collision safety.
+- [ ] **Output filesystem compatibility:** hard-link volume preflight is implemented
+  and rejects destinations whose volume does not report hard-link support. APFS
+  tests pass; real exFAT/FAT/network-volume acceptance is still pending because a
+  local disk image could not be mounted in this environment.
 - [ ] **User-friendly failures:** localize app-owned errors, distinguish missing
   engine/no audio/invalid SVG/permission/disk-full cases, and offer a recovery
   action. Engine detail may remain English; app-owned text must not.
-- [ ] **MP4/FFmpeg trust boundary and resource limits:** preflight input type/size,
-  bound probe/scan behavior, keep protocol restrictions, truncate/attribute engine
-  stderr, and test corrupt/huge MP4s.
+- [ ] **MP4/FFmpeg trust boundary and resource limits:** protocol whitelist and
+  explicit demuxers are in place; probe size/duration and timeouts are now bounded,
+  and corrupt MP4/MKV containers are covered. A real huge-file acceptance and
+  output-size cap decision remain.
 - [ ] **Real-file visual acceptance of effects:** synthetic fixtures cover renderer
   behavior, but real SVGs with gradients/masks/filters/transparency still need a
   visual pass. Sample files stay local and uncommitted.

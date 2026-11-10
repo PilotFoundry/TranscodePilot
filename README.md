@@ -53,7 +53,11 @@ then quits; the window cannot be closed while a conversion is running.
 - Progress shows the active task and completion states, not a fabricated percent.
 - Image preview is the actual exported result, available after conversion.
 - Existing output names get `-1`, `-2`, etc. Atomic publication uses hard links;
-  output volumes must support hard links (e.g. APFS), not FAT/exFAT.
+  the output folder is checked before conversion and volumes without hard-link
+  support (e.g. FAT/exFAT) are rejected. Network-volume behavior still needs
+  real-device acceptance.
+- SVG validation is a coarse local policy, not a general renderer sandbox; the
+  SVG renderer runs as a separate local process.
 - JPEG/PNG output does not preserve EXIF, GPS, HDR, animation or original profiles.
 - Error details from conversion engines currently remain in English.
 
