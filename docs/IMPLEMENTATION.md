@@ -135,7 +135,8 @@ development verification aid, not an application dependency.
   Zoom actions, window frame autosave and a Help sheet.
 - Added a PilotFoundry-family geometric exchange-arrow app icon:
   `assets/AppIcon.svg`, `scripts/build-icon`, bundled `AppIcon.icns`, and
-  `CFBundleIconFile`; the empty state loads the bundled icon explicitly.
+  `CFBundleIconFile`; the empty state and the running app's Dock tile use the
+  bundled icon explicitly (`NSApp.applicationIconImage`).
 - Controls now use the system accent; orange is reserved for the brand icon.
   Added shared spacing/radius/palette tokens in `DesignSystem.swift`.
 - Verified menu Quit exits immediately (`agent-desktop` click on Quit item);

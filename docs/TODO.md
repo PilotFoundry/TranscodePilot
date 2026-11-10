@@ -165,7 +165,8 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 - [x] **D2 — Brand and app icon:** geometric exchange-arrow icon in the
   PilotFoundry green/cream language, orange arrowhead accent, `assets/AppIcon.svg`,
   `scripts/build-icon`, bundled icns, empty-state brand mark; About panel inherits
-  the app icon.
+  the app icon. The Dock tile is set explicitly at launch and was verified in a
+  captured Dock screenshot.
 - [x] **D3 — Window chrome and macOS conventions:** native unified toolbar
   (Add Files, Output Folder), standard app menu, File/Window/Help menus,
   Close/Minimize/Zoom, window frame autosave and verified menu Quit behavior.

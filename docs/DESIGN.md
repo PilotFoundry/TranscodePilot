@@ -192,6 +192,9 @@ address this before v0.1 is called complete.
   visual language — dark green squircle, cream arrows, orange arrowhead accent.
   Source is `assets/AppIcon.svg`; `scripts/build-icon` regenerates the icns.
 - **Window chrome:** native toolbar, not a custom header.
+- **Dock tile:** the running app sets `NSApp.applicationIconImage` from the
+  bundled icns, so a rebuilt icon is reflected without waiting for a LaunchServices
+  cache refresh.
 - **Density:** comfortable spacing for everyday small batches.
 - **Preview:** inline result card.
 - Default font remains the system font; a bundled brand font is not planned.

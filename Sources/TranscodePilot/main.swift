@@ -14,6 +14,11 @@ extension NSToolbarItem.Identifier {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
+        if let icon = AppIcon.image {
+            // Dock tiles use the running app's application icon; set it
+            // explicitly so a rebuilt icns does not fall back to the generic icon.
+            NSApp.applicationIconImage = icon
+        }
         configureWindow()
         configureMenus()
         NSApp.activate(ignoringOtherApps: true)
