@@ -126,3 +126,19 @@ development verification aid, not an application dependency.
   masked halves, clipped corners, partial alpha and JPEG white flattening.
 - These fixtures are intentionally part of the checks target resources, so
   `make check` exercises them on every conversion iteration.
+
+## Design shell — 2026-11-10
+
+- Replaced the custom in-window header with a native unified `NSToolbar`
+  (Add Files, Output Folder); the window title is now the native titlebar.
+- Added standard app menu items, File/Window/Help menus, explicit Close/Minimize/
+  Zoom actions, window frame autosave and a Help sheet.
+- Added a PilotFoundry-family geometric exchange-arrow app icon:
+  `assets/AppIcon.svg`, `scripts/build-icon`, bundled `AppIcon.icns`, and
+  `CFBundleIconFile`; the empty state loads the bundled icon explicitly.
+- Controls now use the system accent; orange is reserved for the brand icon.
+  Added shared spacing/radius/palette tokens in `DesignSystem.swift`.
+- Verified menu Quit exits immediately (`agent-desktop` click on Quit item);
+  light default-size screenshots of empty and populated states were captured.
+- Still pending: D1 full light/dark/min-size/four-locale screenshot matrix,
+  D4–D10 visual/UX tasks and design scorecard sign-off.

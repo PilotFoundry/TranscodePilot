@@ -119,28 +119,31 @@ and in English, 简体中文, 繁體中文 and 日本語:
 
 Strengths observed in the current implementation:
 
+- Native toolbar with title, Add Files and Output Folder; File/Window/Help menus
+  and the standard app menu now exist, so macOS discovery paths are present.
+- A distinct PilotFoundry-family app icon is bundled and used in the empty state.
+- System accent drives primary controls; orange appears only in the brand icon.
 - One clear primary Convert action and an explicit Cancel state.
 - Queue/inspector split is understandable, with native controls and status text.
 - Inline width/limit errors and estimated output dimensions already reduce
   uncertainty before starting.
-- A restrained orange accent and system materials keep the window visually quiet.
 
-Gaps that justify the design workstream:
+Gaps that justify the remaining design workstream:
 
-- No app icon or durable brand presence; About still uses generic presentation.
-- The custom header is not native toolbar chrome; File, Window and Help menus are
-  missing, so standard macOS discovery paths are absent.
-- Typography and spacing are ad hoc; "OUTPUT" all-caps and mixed hierarchical
-  emphasis create an unfinished feel.
+- Typography and spacing are still ad hoc; "OUTPUT" all-caps and mixed
+  hierarchical emphasis create an unfinished feel; D1 tokens are not applied
+  comprehensively yet.
 - Queue rows compress filename, format and status; no counts, thumbnails or clear
   invalid/failed affordances; format pairs such as `PNG → PNG` are noisy.
 - Inspector lacks source dimensions, target dimensions, output size and audio
   duration; preview loads the full exported image and can jump layout.
 - Disabled states, empty state and error presentation have no explicit recovery
   story; app-owned errors can appear in English.
-- Light/dark, four-language overflow, VoiceOver and keyboard focus have not been
-  reviewed as a design surface.
-- No screenshot matrix, heuristic scorecard or recorded design sign-off exists.
+- Light/dark, minimum-size, four-language overflow, VoiceOver and keyboard focus
+  have not been reviewed as a design surface; only light default-size screenshots
+  exist for the empty and populated states.
+- No complete screenshot matrix, heuristic scorecard or recorded design sign-off
+  exists.
 
 Verdict: functionally credible, but not yet a considered product experience. D1–D10
 address this before v0.1 is called complete.
@@ -181,15 +184,25 @@ address this before v0.1 is called complete.
 - Record the outcome in `TESTING.md`/`IMPLEMENTATION.md`; do not claim acceptance
   from build success alone.
 
+## Resolved decisions — 2026-11-10
+
+- **Accent:** system accent for controls, selection and drag feedback; orange is
+  reserved for the brand mark and app icon.
+- **App icon:** geometric exchange/conversion arrows in the PilotFoundry family
+  visual language — dark green squircle, cream arrows, orange arrowhead accent.
+  Source is `assets/AppIcon.svg`; `scripts/build-icon` regenerates the icns.
+- **Window chrome:** native toolbar, not a custom header.
+- **Density:** comfortable spacing for everyday small batches.
+- **Preview:** inline result card.
+- Default font remains the system font; a bundled brand font is not planned.
+
+Implementation status (2026-11-10): native toolbar with Add Files/Output Folder,
+File/Window/Help menus, standard app menu, window frame autosave, app icon bundle
+and explicit empty-state icon are implemented. The remaining D1 screenshot matrix
+and D4–D10 work is still open.
+
 ## Open decisions
 
-- Brand accent: keep orange, use a PilotFoundry-family accent, or use the system
-  accent for controls and reserve orange for brand moments.
-- App icon direction and whether the icon uses a letterform, a conversion glyph or
-  an abstract marker.
-- Native toolbar vs refined custom header.
-- Density: comfortable spacing vs compact queue for larger batches.
-- Preview prominence: inline card, resizable inspector section or separate sheet.
+- Icon refinement and About-panel presentation after the next visual review.
 - Whether preferences stay inline or move to a Settings window as the app grows.
-- Whether the design uses only system fonts (current baseline) or a bundled brand
-  font; the default is system fonts to avoid distribution and license cost.
+- Dark-mode accent treatment (system accent is the baseline).

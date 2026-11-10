@@ -41,16 +41,18 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
 - [x] Real-file pass: CJK and complex-path SVGs at 1×/2×/4×, no-audio MP4
   rejection, AAC-audio MP4 → MP3 with duration check.
 - [x] Reusable synthetic SVG effects corpus in `make check`.
+- [x] Design shell: native toolbar, File/Window/Help menus, standard app menu,
+  branded app icon and system-accent controls.
 - [x] Ad-hoc app build/signature; four `make check` PASS groups; doctor pass.
 
 ## Next landing plan
 
 ### Iteration A (recommended next): design baseline + SVG sizing
 
-1. **Design baseline (D1/D2/D3):** capture the current app in the review matrix
-   (empty, queue, inspector, invalid, converting, done, failed, alert; light/dark;
-   default/min window sizes; four locales), decide accent/brand direction and
-   custom-header vs native-toolbar, record tokens in `docs/DESIGN.md`.
+1. **Design baseline (D1/D2/D3):** D2/D3 are implemented (icon, native toolbar,
+   standard menus); finish D1 by capturing the remaining review matrix (invalid,
+   converting, done, failed, alert; light/dark; default/min window sizes; four
+   locales) and applying tokens more comprehensively in `docs/DESIGN.md`.
 2. **SVG sizing (P0):** implement the agreed rules — 96 dpi physical units,
    explicit width through renderer width-only, scale through zoom, documented
    percentage/missing-size behavior, requested width exact and height tolerance
@@ -160,12 +162,13 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 - [ ] **D1 — Visual audit and design tokens:** record the current app in the
   screenshot matrix; define typography roles, spacing scale, semantic color,
   icon weight, corner radii and light/dark rules. Add tokens to `DESIGN.md`.
-- [ ] **D2 — Brand and app icon:** create a distinct PilotFoundry-family icon and
-  bundle assets; update About panel and icon presence in Finder/Dock. Do not copy
-  sibling-app artwork.
-- [ ] **D3 — Window chrome and macOS conventions:** decide native toolbar vs
-  custom header; add File/Window/Help menus, Close/Minimize/Zoom, window frame
-  restoration, and ensure quit/close semantics are discoverable.
+- [x] **D2 — Brand and app icon:** geometric exchange-arrow icon in the
+  PilotFoundry green/cream language, orange arrowhead accent, `assets/AppIcon.svg`,
+  `scripts/build-icon`, bundled icns, empty-state brand mark; About panel inherits
+  the app icon.
+- [x] **D3 — Window chrome and macOS conventions:** native unified toolbar
+  (Add Files, Output Folder), standard app menu, File/Window/Help menus,
+  Close/Minimize/Zoom, window frame autosave and verified menu Quit behavior.
 - [ ] **D4 — Empty state and first-run guidance:** explain supported formats,
   add/drop behavior and the local-engine boundary in the empty state without
   marketing copy; avoid install commands in the normal end-user path.

@@ -65,6 +65,7 @@ Design/UIUX acceptance is defined in `docs/DESIGN.md`. Before a public release:
 
 - Capture the screen/state matrix at 900×620 and 760×540, light and dark, in all
   four locales (empty, queue, inspector, invalid, converting, failed, done, alert).
+  Light empty/populated screenshots exist from 2026-11-10; the rest is pending.
 - Score the six review lenses 0–2; no zeroes, and the primary flow plus error
   states must score 2.
 - Complete a keyboard-only pass and a VoiceOver pass; record what was and was not
