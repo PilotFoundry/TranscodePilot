@@ -40,17 +40,16 @@ public enum ProcessRunner {
                 try await Task.sleep(nanoseconds: 50_000_000)
             }
         } catch {
-            if process.isRunning { process.interrupt() }
             // This task is already cancelled on the cancellation path, where
-            // Task.sleep throws immediately. Give the child a real grace period
-            // with a wait that is not tied to this task's cancellation.
-            let deadline = Date().addingTimeInterval(1)
-            while process.isRunning && Date() < deadline {
-                if Task.isCancelled { usleep(20_000) }
-                else { try? await Task.sleep(nanoseconds: 20_000_000) }
-            }
+            // Task.sleep throws immediately. Give the child a bounded grace
+            // period; never block the cooperative executor indefinitely on an
+            // unresponsive engine.
+            if process.isRunning { process.terminate() }
+            let graceDeadline = Date().addingTimeInterval(1)
+            while process.isRunning && Date() < graceDeadline { usleep(20_000) }
             if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-            process.waitUntilExit()
+            let forceDeadline = Date().addingTimeInterval(1)
+            while process.isRunning && Date() < forceDeadline { usleep(10_000) }
             throw error
         }
         guard process.terminationStatus == 0 else {

@@ -258,9 +258,10 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 - [ ] TCC-protected folders and persisted output paths: stale/revoked output
   folders are handled and output paths are shown in full. Desktop/Downloads TCC
   acceptance remains manual because it may prompt the user.
-- [ ] Engine resource limits and residual-risk documentation: timeouts and probe
-  bounds are implemented and the renderer trust boundary is documented, but
-  explicit memory/CPU rlimit caps for rsvg/ffmpeg remain unimplemented.
+- [ ] Engine resource limits and residual-risk documentation: timeouts, probe
+  bounds and bounded child termination are implemented and the renderer trust
+  boundary is documented, but explicit memory/CPU rlimit caps for rsvg/ffmpeg
+  remain unimplemented.
 
 ## P1 — Meaningful regression coverage
 

@@ -258,6 +258,8 @@ development verification aid, not an application dependency.
   192,006 bps in ~11.4 s; source hash unchanged.
 - Huge MP4: 1.2 GB remux with three audio tracks → same 1410.816 s / 192,006 bps in
   ~11.5 s; source hash unchanged.
+- Child-process cancellation/timeout no longer has an unbounded `waitUntilExit`
+  path: terminate, bounded grace, SIGKILL, bounded force wait.
 - Effects visual pass: generated gradient/blur/mask/clip/alpha/CJK SVG and the real
   complex-path cloud SVG rendered correctly; enlarged edges remained sharp.
 - Changing options keeps the previous result card reachable until a replacement is
