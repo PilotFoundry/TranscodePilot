@@ -1,10 +1,20 @@
 #!/bin/sh
 set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 for tool in ffmpeg ffprobe rsvg-convert; do
     found=""
-    for candidate in "/opt/homebrew/bin/$tool" "/usr/local/bin/$tool"; do
-        if [ -x "$candidate" ]; then found="$candidate"; break; fi
+    bundled="$ROOT/.build/TranscodePilot.app/Contents/Helpers/$tool"
+    on_path=$(command -v "$tool" 2>/dev/null || true)
+    for candidate in "$bundled" "$on_path" "/opt/homebrew/bin/$tool" "/usr/local/bin/$tool"; do
+        if [ -n "$candidate" ] && [ -x "$candidate" ]; then found="$candidate"; break; fi
     done
-    if [ -n "$found" ]; then printf '%s: %s\n' "$tool" "$found";
-    else printf '%s: missing (brew install ffmpeg librsvg)\n' "$tool"; exit 1; fi
+    if [ -n "$found" ]; then
+        printf '%s: %s\n' "$tool" "$found"
+        case "$tool" in
+            ffmpeg|ffprobe) "$found" -version 2>/dev/null | head -1 ;;
+            rsvg-convert) "$found" --version 2>/dev/null | head -1 ;;
+        esac
+    else
+        printf '%s: missing (brew install ffmpeg librsvg)\n' "$tool"; exit 1
+    fi
 done

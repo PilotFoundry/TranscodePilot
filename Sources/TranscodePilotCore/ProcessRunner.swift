@@ -3,8 +3,12 @@ import Foundation
 public enum Tools {
     public static func find(_ name: String) -> URL? {
         let bundled = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/\(name)")
-        let paths = [bundled.path, "/opt/homebrew/bin/\(name)", "/usr/local/bin/\(name)"]
-        return paths.first(where: { FileManager.default.isExecutableFile(atPath: $0) }).map(URL.init(fileURLWithPath:))
+        var paths = [bundled.path, "/opt/homebrew/bin/\(name)", "/usr/local/bin/\(name)"]
+        if let path = ProcessInfo.processInfo.environment["PATH"] {
+            paths += path.split(separator: ":").map { "\($0)/\(name)" }
+        }
+        return paths.first(where: { FileManager.default.isExecutableFile(atPath: $0) })
+            .map(URL.init(fileURLWithPath:))
     }
 }
 

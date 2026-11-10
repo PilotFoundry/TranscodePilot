@@ -58,7 +58,9 @@ public enum Converter {
         try fm.createDirectory(at: temporary, withIntermediateDirectories: false)
         defer { try? fm.removeItem(at: temporary) }
         let result = temporary.appendingPathComponent("output.\(options.format.rawValue)")
+        let sourceSignature = InputFile.signature(of: source)
         if options.format == .mp3 {
+            try requireCapacity(in: directory, bytes: 64 * 1024 * 1024)
             guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else {
                 throw ConversionError.code(.missingEngine, detail: "Install FFmpeg: brew install ffmpeg")
             }
@@ -74,9 +76,14 @@ public enum Converter {
                                                       "-probesize", "64M", "-analyzeduration", "100000000",
                                                       "-f", demuxer, "-i", source.path, "-map", "0:a:0", "-vn",
                                                       "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600)
-            let verification = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", result.path], timeout: 60)
-            guard let duration = Double(String(decoding: verification, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)), duration > 0 else {
-                throw ConversionError.code(.outputVerification, detail: "Output audio could not be verified.")
+            let verification = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "stream=codec_name:format=duration", "-of", "default=noprint_wrappers=1", result.path], timeout: 60)
+            let verificationText = String(decoding: verification, as: UTF8.self)
+            let verifiedDuration = verificationText
+                .split(whereSeparator: \.isNewline)
+                .first(where: { $0.hasPrefix("duration=") })
+                .flatMap { Double($0.dropFirst("duration=".count)) }
+            guard verificationText.contains("codec_name=mp3"), let verifiedDuration, verifiedDuration > 0 else {
+                throw ConversionError.code(.outputVerification, detail: "Output audio could not be verified as MP3.")
             }
         } else {
             var sourceURL = source
@@ -139,6 +146,7 @@ public enum Converter {
             let isSVG = input.pathExtension.lowercased() == "svg"
             let width = isSVG ? displayedWidth : (options.width > 0 ? options.width : Int(Double(displayedWidth) * options.scale))
             let height = Int((Double(displayedHeight) * Double(width) / Double(max(1, displayedWidth))).rounded())
+            try requireCapacity(in: directory, bytes: Int64(width) * Int64(height) * 4 + 32 * 1024 * 1024)
             guard width > 0, height > 0, width <= 16_384, height <= 16_384,
                   Double(width) * Double(height) <= 40_000_000,
                   Double(sourceWidth) * Double(sourceHeight) <= 80_000_000 else {
@@ -187,5 +195,13 @@ public enum Converter {
             if errno != EEXIST { throw ConversionError.code(.outputNotWritable, detail: "Cannot save output: \(String(cString: strerror(errno)))") }
         }
         throw ConversionError.code(.outputNotWritable, detail: "Too many files with the same output name.")
+    }
+
+    private static func requireCapacity(in directory: URL, bytes: Int64) throws {
+        let values = try? directory.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+        guard let available = values?.volumeAvailableCapacityForImportantUsage, available > 0 else { return }
+        guard available >= bytes else {
+            throw ConversionError.code(.diskFull, detail: "Not enough free space for the converted output.")
+        }
     }
 }

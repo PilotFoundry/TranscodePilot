@@ -207,3 +207,16 @@ development verification aid, not an application dependency.
 - Width and scale are persisted; photos default to 1× while SVG/video keep 2×.
 - Engine readiness is shown in the bottom bar; About version comes from
   `Info.plist`.
+
+## Reliability hardening — 2026-11-10
+
+- Age-based cleanup removes stale `.transcodepilot-*` output temps and
+  `transcodepilot-process-*` process temps without touching active instances.
+- Output verification now requires an MP3 stream codec and duration (images keep
+  decoded-dimension checks). Disk space is preflighted for audio/image outputs and
+  disk-full maps to its own localized error.
+- A fresh size/mtime `FileSignature` is captured and rechecked before publication;
+  external source mutation throws `sourceChanged` instead of publishing stale work.
+- `Tools.find` searches bundled Helpers, Homebrew paths and PATH; `scripts/doctor`
+  uses the same order and reports engine versions.
+- Regression checks cover source mutation and stale-temp cleanup.

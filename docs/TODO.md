@@ -53,6 +53,8 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
   Retry / choose-output-folder recovery actions.
 - [x] Queue controls, stable drop ordering, apply-to-similar scope, saved width /
   kind-aware scale defaults, engine warning and plist-backed About version.
+- [x] Crash-temp cleanup, disk-space preflight, source signatures, stronger output
+  verification and PATH-aware engine discovery.
 - [x] Ad-hoc app build/signature; four `make check` PASS groups; doctor pass.
 
 ## Next landing plan
@@ -223,19 +225,18 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 
 ## P1 — Reliability hardening (from the 2026-11-06 review)
 
-- [ ] Stale temporary output cleanup: `.transcodepilot-*` and
-  `transcodepilot-process-*` can survive crash/force-quit; define age-based
-  cleanup that never touches active instances.
-- [ ] Disk-space preflight and write-failure recovery; distinguish disk-full from
-  permission errors.
-- [ ] Source TOCTOU and actual type verification: revalidate before conversion;
-  do not rely on extension alone.
+- [x] Stale temporary output cleanup: age-based cleanup (>24 h) removes
+  `.transcodepilot-*` and `transcodepilot-process-*` without touching active work.
+- [x] Disk-space preflight and write-failure recovery; disk-full is a separate
+  typed failure from permission/volume errors.
+- [x] Source TOCTOU and actual type verification: fresh size/mtime signature is
+  rechecked before publication; engines probe/decode actual content.
 - [ ] Output filename limits: long names, NFC/NFD, case-insensitive volumes and
   future non-APFS fallback.
-- [ ] Stronger production output verification: decoded content/audio codec, not
-  only dimensions/duration.
-- [ ] Engine discovery and version readiness: `Tools.find` ignores PATH;
-  `scripts/doctor` and bundled Helpers disagree; versions are unchecked.
+- [x] Stronger production output verification: MP3 codec + duration, decoded
+  image dimensions, and existing publication checks.
+- [x] Engine discovery and version readiness: `Tools.find` includes PATH;
+  `scripts/doctor` checks bundled Helpers first and prints versions.
 - [ ] TCC-protected folders and persisted output paths: test
   Desktop/Documents/Downloads access and stale/revoked output folders.
 - [ ] Engine resource limits and residual-risk documentation: memory/CPU caps for

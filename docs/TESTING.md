@@ -16,6 +16,7 @@ checks:
 - SVG security fixtures: foreign namespace, animation variants, discard and
   external href are rejected; self-contained `@media` remains accepted.
 - Preference sanitizing includes kind-aware scale defaults and saved-width bounds.
+- Source mutation detection and age-based temporary-directory cleanup.
 - SVG sizing fixtures: physical units at 96 dpi, viewBox-only, percentage,
   missing-one-dimension, fractional sizes, explicit requested width and rejection
   of unsupported percentage/missing-dimension documents.

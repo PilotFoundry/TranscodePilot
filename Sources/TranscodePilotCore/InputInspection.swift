@@ -3,6 +3,11 @@ import CoreGraphics
 import ImageIO
 
 /// Filesystem preflight shared by inspection and conversion.
+public struct FileSignature: Equatable, Sendable {
+    public let size: Int64
+    public let modified: Date?
+}
+
 public enum InputFile {
     /// The source review selected 20 MB as the upper bound for SVG text.
     public static let svgSizeLimit = 20_000_000
@@ -32,6 +37,23 @@ public enum InputFile {
             throw ConversionError.code(.inputTooLarge, detail: limitMessage)
         }
         return try Data(contentsOf: resolved)
+    }
+
+    /// Cheap identity used to detect source replacement or mutation while the
+    /// engines are working. The app never writes to the source, so any change is
+    /// external and must prevent publication of a stale result.
+    public static func signature(of url: URL) -> FileSignature? {
+        // FileManager reads fresh stat data; URL resource values can serve a
+        // cached size after an external rewrite.
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let size = attributes[.size] as? NSNumber else { return nil }
+        return FileSignature(size: size.int64Value, modified: attributes[.modificationDate] as? Date)
+    }
+
+    public static func verifyUnchanged(_ url: URL, against signature: FileSignature) throws {
+        guard let current = self.signature(of: url), current == signature else {
+            throw ConversionError.code(.sourceChanged, detail: "The source file changed during conversion.")
+        }
     }
 }
 

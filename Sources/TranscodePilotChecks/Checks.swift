@@ -118,6 +118,28 @@ func convertSizingFixture(_ name: String, width: Int = 0, scale: Double = 1, in 
     return try pixels(output)
 }
 
+func checkReliabilityHardening(in folder: URL) async throws {
+    let observed = folder.appendingPathComponent("signature.txt")
+    try Data("one".utf8).write(to: observed)
+    guard let signature = InputFile.signature(of: observed) else { throw ConversionError.message("FAIL: missing file signature") }
+    try InputFile.verifyUnchanged(observed, against: signature)
+    try Data("two-much-longer".utf8).write(to: observed)
+    var changed = false
+    do { try InputFile.verifyUnchanged(observed, against: signature) }
+    catch { changed = true }
+    try expect(changed, "source mutation is detected before publication")
+
+    let stale = folder.appendingPathComponent(".transcodepilot-stale-check")
+    let fresh = folder.appendingPathComponent(".transcodepilot-fresh-check")
+    try FileManager.default.createDirectory(at: stale, withIntermediateDirectories: false)
+    try FileManager.default.createDirectory(at: fresh, withIntermediateDirectories: false)
+    try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -2 * 86_400)], ofItemAtPath: stale.path)
+    _ = TemporaryCleanup.removeStaleOutputTemps(in: folder)
+    try expect(!FileManager.default.fileExists(atPath: stale.path), "stale conversion temp is removed")
+    try expect(FileManager.default.fileExists(atPath: fresh.path), "recent conversion temp is retained")
+    try? FileManager.default.removeItem(at: fresh)
+}
+
 func checkSVGSecurity(in folder: URL) async throws {
     let safeURL = try fixtureURL("Fixtures/SVGSecurity/safe-media-query.svg")
     var safeOptions = ConversionOptions()
@@ -328,6 +350,7 @@ func checkSVGSizing(in folder: URL) async throws {
             try await checkSVGEffects(in: folder)
             try await checkSVGSizing(in: folder)
             try await checkSVGSecurity(in: folder)
+            try await checkReliabilityHardening(in: folder)
 
             guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else { throw ConversionError.message("FFmpeg required for checks") }
             let video = folder.appendingPathComponent("sample.mp4")
@@ -373,7 +396,7 @@ func checkSVGSizing(in folder: URL) async throws {
             print("PASS: MP4/MKV → MP3, corrupt containers, missing audio, child process cancellation and temporary cleanup")
             print("PASS: SVG pixels, transparency, JPEG background, bitmap resize, collision safety, source preservation and unsafe input")
             print("PASS: input bounds, symlink source, cancelled conversion, planner estimates and preference sanitizing")
-            print("PASS: SVG effects, sizing and trust-boundary fixtures")
+            print("PASS: SVG effects, sizing, trust-boundary and reliability-hardening fixtures")
         } catch {
             fputs("\(error.localizedDescription)\n", stderr)
             exit(1)

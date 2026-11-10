@@ -69,6 +69,10 @@ struct ConversionItem: Identifiable {
                 outputFolder = url
             }
         }
+        _ = TemporaryCleanup.removeStaleProcessTemps()
+        if let outputFolder {
+            _ = TemporaryCleanup.removeStaleOutputTemps(in: outputFolder)
+        }
     }
 
     func add(_ urls: [URL]) {
@@ -124,6 +128,7 @@ struct ConversionItem: Identifiable {
         if panel.runModal() == .OK, let url = panel.url {
             outputFolder = url
             UserDefaults.standard.set(url.path, forKey: "outputFolder")
+            _ = TemporaryCleanup.removeStaleOutputTemps(in: url)
         }
     }
 

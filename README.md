@@ -53,6 +53,9 @@ then quits; the window cannot be closed while a conversion is running.
   missing fonts can substitute. Convert text to paths for exact typography.
 - Images: 40 MP output, 80 MP bitmap input, 16,384 maximum output dimension.
 - Progress shows the active task and completion states, not a fabricated percent.
+  Stale conversion temp directories older than 24 hours are cleaned at launch.
+  Disk space is checked before encoding; source size/mtime is rechecked before
+  publication so external mutations cannot silently publish a stale result.
 - Image preview is the actual exported result, available after conversion.
 - Existing output names get `-1`, `-2`, etc. Atomic publication uses hard links;
   the output folder is checked before conversion and volumes without hard-link
