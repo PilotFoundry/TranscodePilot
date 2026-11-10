@@ -24,15 +24,27 @@ Screen Recording or Full Disk Access permission.
 Manual acceptance before a public release:
 
 - Actual user SVGs: Chinese/Japanese fonts, gradients, masks, filters and clipping.
-- Quit/close while converting: cancellation wait, termination, blocked window
-  close and Dock reopen. (Code implemented; GUI acceptance pending.)
-- Inline invalid-width/output-limit messages, estimated dimensions and disabled
-  Convert on invalid items.
+- ~~Quit/close while converting: cancellation wait, termination, blocked window
+  close and Dock reopen.~~ Verified 2026-11-10 with agent-desktop: close alert,
+  idle close/quit, and ⌘Q during conversion. (Dock reopen remains defensive and
+  was not separately exercised.)
+- ~~Inline invalid-width/output-limit messages, estimated dimensions and disabled
+  Convert on invalid items.~~ Verified 2026-11-10 with agent-desktop.
 - Light/dark appearance, keyboard navigation, VoiceOver and four localizations.
 - Drag/drop, Open With, per-file/batch settings, cancel/retry and Finder reveal.
 - Read-only source, full disk, exFAT/network destination (filesystem policy still
   pending), disconnected output volume and filename collisions.
 - Intel, macOS 14, portable engine packaging, notices and Gatekeeper first launch.
+
+GUI acceptance (2026-11-10): `agent-desktop` 1.2.0 exercised the built bundle via
+its accessibility tree. It verified real batch conversion (PNG outputs, MP3 codec
+and 600.003 s duration), inline width/limit validation with disabled Convert,
+estimated output text, the conversion-in-progress close alert, cancel during a
+2-hour MP3 conversion (status, child process, temporary directory and output), and
+⌘Q during conversion after fixing the previously disabled app-menu Quit item.
+The tool is a local verification aid, not a runtime dependency. Not covered:
+SVG/bitmap in-flight cancellation, real user files, VoiceOver/light-dark, exFAT or
+network destinations, Intel and macOS 14.
 
 Only recorded automated checks count as exercised. Missing fonts may substitute;
 the app does not claim pixel equivalence with browsers or other SVG renderers.

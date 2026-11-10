@@ -61,6 +61,9 @@ No release upload, remote repository creation or domain purchase in this task.
   item is invalid; conversion during quit is cancelled and termination is
   retried after cleanup (up to 5 s); window close is blocked while converting;
   Dock reopen restores the window; localization lookup no longer force-unwraps.
+- GUI acceptance (2026-11-10) found and fixed a disabled app-menu Quit item. It is
+  now explicitly targeted at NSApp, and the termination wait uses main-queue
+  scheduling rather than a default-mode timer.
 - Checks: added empty/oversized/corrupt/directory inputs, extreme aspect ratio,
   symlink source, cancelled conversion, planner estimates and preference
   sanitizing.
@@ -79,3 +82,25 @@ No release upload, remote repository creation or domain purchase in this task.
 - Still manual/pending: real quit/close interaction acceptance, VoiceOver and
   light/dark review, user-provided SVG/MP4 samples, exFAT/network destinations,
   Intel and macOS 14.
+
+## GUI acceptance — 2026-11-10
+
+`agent-desktop` 1.2.0 drove the built bundle through its AX tree (headless refs;
+Accessibility and Screen Recording granted by the user). This tool is a
+development verification aid, not an application dependency.
+
+- Real UI batch conversion: photo/SVG/MP4 → PNG/MP3; outputs reopened from disk;
+  MP3 codec and 600.003 s duration verified.
+- Inline validation: width -1/16385 → localized width error and disabled Convert;
+  width 16000 → 40 MP limit error and disabled Convert; width 0 → 6,000 × 4,000
+  estimate and enabled Convert. SVG 800×500 at 2× → 1,600 × 1,000; at width 4000
+  → 4,000 × 2,500.
+- Window close during conversion: alert “正在转换 / 请等待当前转换完成，或先取消转换。”;
+  window remains and conversion continues.
+- Cancel during a 2-hour MP3 GUI conversion: status “已取消”, no ffmpeg child, no
+  `.transcodepilot-*` directory, no partial MP3.
+- Quit during conversion after the fix: ⌘Q exits in ~0.4 s, child process gone,
+  temporary directory gone, no partial output.
+- Remaining manual acceptance: SVG/bitmap in-flight cancellation, real user
+  SVG/MP4 samples, VoiceOver/light-dark, exFAT/network destinations, Intel and
+  macOS 14.

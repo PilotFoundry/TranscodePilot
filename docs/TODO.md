@@ -1,6 +1,6 @@
 # TranscodePilot backlog
 
-Updated: 2026-11-06. Scope: independent PilotFoundry macOS media converter.
+Updated: 2026-11-10. Scope: independent PilotFoundry macOS media converter.
 This is a source review backlog, not a claim that every potential defect has
 been reproduced. Checked items record existing work; unchecked items remain.
 
@@ -37,6 +37,27 @@ Scope and defaults agreed before implementation:
   the default SwiftPM backend is now used (native backend deprecated), and CLT
   has no XCTest, so regression checks stay executable-based.
 
+## GUI verification — 2026-11-10
+
+Verified against the built bundle with `agent-desktop` 1.2.0 (accessibility tree,
+headless refs/clicks; Accessibility and Screen Recording granted by the user):
+
+- Batch converted photo/SVG/MP4 through the real UI; PNG outputs, MP3 codec and
+  600.003 s duration verified from disk.
+- Inline validation: width -1 and 16385 show the localized width error and disable
+  Convert; width 16000 shows the 40 MP limit error and disables Convert; width 0
+  restores the 6,000 × 4,000 estimate and enables Convert.
+- Closing the window during conversion shows “正在转换 / 请等待当前转换完成，或先取消转换。”
+  and keeps the app alive.
+- Cancel during a 2-hour MP3 conversion: status “已取消”, no ffmpeg process, no
+  `.transcodepilot-*` directory, no partial MP3.
+- Found and fixed a real quit defect: the app-menu Quit item had no target and was
+  disabled, so ⌘Q did nothing. After targeting NSApp and moving the termination
+  wait to main-queue scheduling, ⌘Q during conversion exits in about 0.4 s with
+  no child or temporary-file leaks.
+- Not yet covered: SVG/bitmap in-flight cancellation, real user files,
+  VoiceOver/light-dark, and exFAT/network volumes.
+
 ## P0 — Reliable daily use
 
 - [x] **Initialize local Git and record the reviewed baseline:** `git init -b main`
@@ -44,16 +65,17 @@ Scope and defaults agreed before implementation:
   bundles and personal fixtures remain ignored; later changes are committed in
   small verified steps.
 
-- [ ] **Quit/close during conversion:** cancel, wait for cleanup, then complete the
-  requested quit. Current `main.swift` returns `terminateCancel` without retrying
-  termination; closing the last window can leave the app running without a window.
-  Phase 1 implemented cancel-then-quit, blocked window close while running and
-  Dock reopen; GUI/manual acceptance is still pending.
+- [x] **Quit/close during conversion:** cancel, wait for cleanup, then complete the
+  requested quit. Closing the window during conversion is blocked with an alert;
+  idle close/quit and quit-during-conversion are now verified. A disabled app-menu
+  Quit item was found during GUI acceptance and fixed by targeting NSApp and
+  scheduling the termination wait on the main queue.
 - [x] **Parameter validation before Start:** show invalid/negative/oversized width
   inline, disable conversion when invalid, and show estimated output dimensions.
   Clamp restored preferences; an invalid stored quality must not crash `Int(...)`.
-  Completed during Phase 1 (inline width/limit messages, planner-based estimate,
-  disabled Convert, sanitized stored preferences and safe quality formatting).
+  Completed during Phase 1 and GUI-verified on 2026-11-10 (inline width/limit
+  messages, planner-based estimate, disabled Convert, sanitized stored preferences
+  and safe quality formatting).
 - [x] **Bound resource use before decoding:** check SVG file size before
   `Data(contentsOf:)`; validate finite/positive source dimensions before division
   or conversion to Int. Test extreme aspect ratios and malformed image headers.
@@ -70,8 +92,9 @@ Scope and defaults agreed before implementation:
   processing. Check cancellation between decode/draw/encode stages; currently bitmap
   work can continue until final publication. Fix child grace delay using a wait that
   is not immediately cancelled; current `try? Task.sleep` skips its intended delay.
-  Phase 1 added bitmap stage checks and a real grace wait; in-flight engine/bitmap
-  cancellation acceptance remains.
+  Phase 1 added bitmap stage checks and a real grace wait. GUI cancellation of an
+  FFmpeg MP3 conversion is verified (status, child process, temporary directory and
+  output checks); SVG/bitmap in-flight cancellation acceptance remains.
 - [ ] **Output filesystem compatibility:** add safe non-overwriting publication for
   exFAT/FAT/network volumes or reject unsupported destinations before processing.
   Keep APFS atomic publication and collision safety.
