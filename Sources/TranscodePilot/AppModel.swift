@@ -45,6 +45,8 @@ struct ConversionItem: Identifiable {
     @Published var notice: String?
     @Published var targeted = false
     @Published var engineWarning: String?
+    @Published var thumbnails: [UUID: NSImage] = [:]
+    @Published var durations: [UUID: Double] = [:]
     private var worker: Task<Void, Never>?
     var selectedIndex: Int? { items.firstIndex(where: { $0.id == selection }) }
 
@@ -102,6 +104,8 @@ struct ConversionItem: Identifiable {
             var item = ConversionItem(source: url, options: options, metadata: metadata)
             item.validationError = inspectionError
             items.append(item)
+            requestThumbnail(for: item)
+            requestDuration(for: item)
             selection = item.id
             refreshValidation(at: items.count - 1)
         }
@@ -196,6 +200,35 @@ struct ConversionItem: Identifiable {
 
     func cancel() { worker?.cancel() }
 
+    private func requestThumbnail(for item: ConversionItem) {
+        guard item.metadata?.kind == .image, thumbnails[item.id] == nil else { return }
+        let id = item.id
+        let source = item.source
+        Task.detached(priority: .utility) {
+            let image = ThumbnailLoader.load(source, maxPixelSize: 64)
+            guard let image else { return }
+            await MainActor.run { [weak self] in
+                self?.thumbnails[id] = image
+            }
+        }
+    }
+
+    private func requestDuration(for item: ConversionItem) {
+        guard item.metadata?.kind == .video, durations[item.id] == nil,
+              let probe = Tools.find("ffprobe") else { return }
+        let id = item.id
+        let source = item.source
+        let demuxer = source.pathExtension.lowercased() == "mkv" ? "matroska" : "mov"
+        Task {
+            let arguments = ["-v", "error", "-protocol_whitelist", "file,pipe", "-f", demuxer,
+                             "-show_entries", "format=duration", "-of", "csv=p=0", source.path]
+            guard let data = try? await ProcessRunner.run(probe, arguments, timeout: 30),
+                  let value = Double(String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)),
+                  value > 0 else { return }
+            self.durations[id] = value
+        }
+    }
+
     func retrySelected() {
         reconvertSelected(requireFailure: true)
     }
@@ -215,6 +248,8 @@ struct ConversionItem: Identifiable {
 
     func clearCompleted() {
         guard !running else { return }
+        let removed = items.filter { $0.status == "Done" }.map(\.id)
+        for id in removed { thumbnails[id] = nil; durations[id] = nil }
         items.removeAll { $0.status == "Done" }
         selection = items.first?.id
     }
@@ -222,6 +257,8 @@ struct ConversionItem: Identifiable {
     func clearAll() {
         guard !running else { return }
         items.removeAll()
+        thumbnails.removeAll()
+        durations.removeAll()
         selection = nil
     }
     func removeSelected() {

@@ -201,8 +201,46 @@ address this before v0.1 is called complete.
 
 Implementation status (2026-11-10): native toolbar with Add Files/Output Folder,
 File/Window/Help menus, standard app menu, window frame autosave, app icon bundle
-and explicit empty-state icon are implemented. The remaining D1 screenshot matrix
-and D4–D10 work is still open.
+and explicit empty-state icon are implemented. D1–D8 are implemented; D9 keyboard
+and AX-label work is verified, with live VoiceOver/focus-order acceptance still
+manual; D10's scorecard is recorded below.
+
+## D1 review matrix — 2026-11-10
+
+Local artifacts live in `.build/design/d1/` (ignored, not committed): light/dark
+empty, valid, invalid, converting, failed, done, alert-sheet, minimum-window and
+four-language captures. Reviews drove these fixes:
+
+- Queue grammar now says “1 file” / “N files” instead of “1 files”.
+- Section eyebrows changed from all-caps `SOURCE`/`OUTPUT` to sentence case.
+- Queue footer shows Done/Failed/Pending counts even during a conversion.
+- Output path is shown in full (home-abbreviated, middle-truncated) instead of only
+  the last path component.
+- Result card moved directly below Source so the preview/actions are visible
+  without scrolling; bounded 512 px preview uses a checkerboard for alpha.
+- Queue rows use bounded 64 px ImageIO thumbnails; no full-size decode in body.
+- Close-while-converting now uses a non-blocking sheet instead of `runModal()`.
+- Window restoration centers the window when no connected screen contains it.
+
+## Design acceptance scorecard (2026-11-10)
+
+Scores: 0 = unacceptable, 1 = acceptable with follow-up, 2 = meets the release bar.
+
+| Lens | Score | Notes |
+| --- | --- | --- |
+| Product character | 2 | Native macOS shell, branded icon, local-first copy |
+| Hierarchy | 2 | Convert primary; result card near Source; recovery actions local |
+| Density | 1 | Comfortable default; inspector needs scrolling at minimum height |
+| Feedback | 2 | Inline invalid reasons, spinner/Cancel, Retry, honest errors |
+| Light/dark | 2 | Reviewed both appearances; checkerboard remains legible |
+| Localization | 2 | Four-language empty/populated captures; plural grammar fixed |
+| Accessibility | 1 | Labels + keyboard pass for primary flow; VoiceOver/focus pending |
+| Error UX | 2 | Localized app-owned text, engine detail, recovery actions |
+| macOS conventions | 2 | Native toolbar/menus, close alert, Cmd+Return/Cmd+O |
+| Conservation | 2 | Source read-only copy, non-overwriting publication |
+
+Gate: no zeroes; primary flow and error states score 2. Final sign-off remains
+open only for the live VoiceOver/focus-order pass.
 
 ## Open decisions
 

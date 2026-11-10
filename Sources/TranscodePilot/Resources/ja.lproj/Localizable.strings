@@ -13,7 +13,7 @@
 "Convert" = "変換";
 "Notice" = "お知らせ";
 "OK" = "OK";
-"OUTPUT" = "出力設定";
+"OUTPUT" = "出力";
 "Format" = "形式";
 "Audio quality" = "音声品質";
 "Width in pixels" = "幅（ピクセル）";
@@ -57,7 +57,7 @@
 "Show All" = "すべてを表示";
 "Output folder" = "出力フォルダ";
 "TranscodePilot Help" = "TranscodePilot ヘルプ";
-"Supported inputs: SVG, PNG, JPEG, HEIC, MP4. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved." = "対応入力：SVG、PNG、JPEG、HEIC、MP4。出力：PNG、JPEG、MP3。ファイルはこの Mac 内で処理され、元ファイルと既存の出力は保持されます。";
+"Supported inputs: SVG, PNG, JPEG, HEIC, MP4, MKV. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved." = "対応入力：SVG、PNG、JPEG、HEIC、MP4、MKV。出力：PNG、JPEG、MP3。ファイルはこの Mac 内で処理され、元ファイルと既存の出力は保持されます。";
 "Conversion settings are invalid." = "変換設定が無効です。";
 "This format is not supported." = "この形式はサポートされていません。";
 "The source file cannot be read." = "ソースファイルを読み込めません。";
@@ -85,3 +85,9 @@
 "Queue actions" = "キューの操作";
 "Some conversion engines are missing." = "一部の変換エンジンが見つかりません。";
 "Convert again" = "再変換";
+"SOURCE" = "ソース";
+"Source is read-only; existing outputs are never overwritten." = "ソースは読み取り専用で、既存の出力は上書きされません。";
+"Files stay on this Mac. Sources and existing outputs are never overwritten." = "ファイルはこの Mac 内で処理され、ソースと既存の出力は上書きされません。";
+"file" = "ファイル";
+"Pending" = "待機中";
+"Output preview" = "出力プレビュー";

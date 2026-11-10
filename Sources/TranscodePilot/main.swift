@@ -7,13 +7,19 @@ extension NSToolbarItem.Identifier {
 }
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate,
-    NSToolbarDelegate, NSToolbarItemValidation {
+    NSToolbarDelegate, NSToolbarItemValidation, NSMenuItemValidation {
     let model = AppModel()
     var window: NSWindow!
     private var terminationInProgress = false
+    private var closeAlertVisible = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
+        switch ProcessInfo.processInfo.environment["TRANSCODEPILOT_APPEARANCE"] {
+        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        default: break
+        }
         if let icon = AppIcon.image {
             // Dock tiles use the running app's application icon; set it
             // explicitly so a rebuilt icns does not fall back to the generic icon.
@@ -41,7 +47,11 @@ extension NSToolbarItem.Identifier {
         window.toolbar = toolbar
         window.toolbarStyle = .unified
 
+        window.minSize = NSSize(width: 760, height: 540)
         if !window.setFrameUsingName("TranscodePilotMainWindow") {
+            window.center()
+        } else if !NSScreen.screens.contains(where: { $0.visibleFrame.intersects(window.frame) }) {
+            // A disconnected display must not strand the only window offscreen.
             window.center()
         }
         window.makeKeyAndOrderFront(nil)
@@ -88,6 +98,11 @@ extension NSToolbarItem.Identifier {
         let (item, menu) = makeMenu(title: L("File"))
         let add = menu.addItem(withTitle: L("Add Files…"), action: #selector(addFilesFromMenu), keyEquivalent: "o")
         add.target = self
+        menu.addItem(.separator())
+        let convert = menu.addItem(withTitle: L("Convert"), action: #selector(convertFromMenu), keyEquivalent: "\r")
+        convert.target = self
+        let cancel = menu.addItem(withTitle: L("Cancel"), action: #selector(cancelFromMenu), keyEquivalent: "\u{1b}")
+        cancel.target = self
         menu.addItem(.separator())
         let close = menu.addItem(withTitle: L("Close"), action: #selector(closeWindow), keyEquivalent: "w")
         close.target = self
@@ -159,6 +174,15 @@ extension NSToolbarItem.Identifier {
         alert.informativeText = L("Supported inputs: SVG, PNG, JPEG, HEIC, MP4. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved.")
         alert.addButton(withTitle: L("OK"))
         alert.runModal()
+    }
+
+    @objc private func convertFromMenu() { model.start() }
+    @objc private func cancelFromMenu() { model.cancel() }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(convertFromMenu) { return model.canStart }
+        if menuItem.action == #selector(cancelFromMenu) { return model.running }
+        return true
     }
 
     // MARK: - Toolbar
@@ -269,11 +293,15 @@ extension NSToolbarItem.Identifier {
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         if terminationInProgress { return true }
         guard model.running else { return true }
+        guard !closeAlertVisible else { return false }
+        closeAlertVisible = true
         let alert = NSAlert()
         alert.messageText = L("Conversion in progress")
         alert.informativeText = L("Wait for the current conversion to finish or cancel it first.")
         alert.addButton(withTitle: L("OK"))
-        alert.runModal()
+        alert.beginSheetModal(for: window) { [weak self] _ in
+            self?.closeAlertVisible = false
+        }
         return false
     }
 

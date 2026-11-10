@@ -94,3 +94,12 @@ Design/UIUX acceptance is defined in `docs/DESIGN.md`. Before a public release:
 
 Only recorded automated checks count as exercised. Missing fonts may substitute;
 the app does not claim pixel equivalence with browsers or other SVG renderers.
+
+## Design acceptance — 2026-11-10
+
+Local `.build/design/d1/` screenshots cover empty, valid, invalid, converting,
+failed, done, close-alert, minimum 760×540 and light/dark/four-language states.
+AX inspection exposes named rows and controls; Cmd+Return completed a keyboard-only
+conversion. Live VoiceOver, full focus-order and Reduce Motion checks remain
+manual. The heuristic scorecard is in `docs/DESIGN.md`; final sign-off is open only
+for that manual pass.

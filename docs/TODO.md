@@ -173,9 +173,9 @@ repository, domain/trademark, Developer ID, Intel/macOS 14 hardware.
 The design direction and current baseline review are in `docs/DESIGN.md`. These
 tasks are required for "complete the v0.1 experience", not optional polish.
 
-- [ ] **D1 — Visual audit and design tokens:** record the current app in the
-  screenshot matrix; define typography roles, spacing scale, semantic color,
-  icon weight, corner radii and light/dark rules. Add tokens to `DESIGN.md`.
+- [x] **D1 — Visual audit and design tokens:** screenshot matrix captured at
+  default and minimum size, light/dark, four locales, and empty/valid/invalid/
+  converting/failed/done/alert states; tokens and review notes are in `DESIGN.md`.
 - [x] **D2 — Brand and app icon:** geometric exchange-arrow icon in the
   PilotFoundry green/cream language, orange arrowhead accent, `assets/AppIcon.svg`,
   `scripts/build-icon`, bundled icns, empty-state brand mark; About panel inherits
@@ -184,28 +184,29 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 - [x] **D3 — Window chrome and macOS conventions:** native unified toolbar
   (Add Files, Output Folder), standard app menu, File/Window/Help menus,
   Close/Minimize/Zoom, window frame autosave and verified menu Quit behavior.
-- [ ] **D4 — Empty state and first-run guidance:** explain supported formats,
-  add/drop behavior and the local-engine boundary in the empty state without
-  marketing copy; avoid install commands in the normal end-user path.
-- [ ] **D5 — Queue row and batch status design:** readable filename/format/status,
-  invalid badge, selection state, completed/failed/remaining counts, stable drop
-  ordering and optional bounded thumbnails (checkerboard for transparency).
-  Do not decode full 40 MP previews inside `View.body`.
-- [ ] **D6 — Inspector information architecture:** group Source / Output / Result;
-  show source and target dimensions, output size and audio duration; keep only
-  relevant controls visible; bound previews and add a clear result/reveal action.
-- [ ] **D7 — Action hierarchy and feedback:** one primary Convert action, clear
-  Cancel state, per-item retry/reconvert and clear-completed actions, output-folder
-  affordance, drag-over feedback, and copy that explains why a control is disabled.
-- [ ] **D8 — Light/dark, typography and localization:** actual light/dark review,
-  contrast targets, no all-caps inconsistency, CJK line height, four-language
-  pluralization/overflow and monospaced dimensions/paths.
-- [ ] **D9 — Accessibility and keyboard:** labels/hints for icon-only controls,
-  focus order, keyboard-only primary flow, VoiceOver names/states/announcements,
-  Reduce Motion behavior and adequate hit targets.
-- [ ] **D10 — Design acceptance gate:** maintain the screenshot matrix, heuristic
-  scorecard and review record; update `TESTING.md`; do not treat build success as
-  visual acceptance.
+- [x] **D4 — Empty state and first-run guidance:** formats, add/drop and the
+  local-processing/source-preservation boundary are shown without marketing or
+  install copy.
+- [x] **D5 — Queue row and batch status design:** filename/format/status, invalid
+  badge, selection state, completed/failed/pending counts, stable drop ordering,
+  64 px ImageIO thumbnails and checkerboard previews; no full-size decode in the
+  row body.
+- [x] **D6 — Inspector information architecture:** Source / Output / Result are
+  grouped; source/target dimensions, video duration, output size and bounded
+  512 px preview are shown; result actions are inline.
+- [x] **D7 — Action hierarchy and feedback:** one primary Convert, clear Cancel,
+  per-item Retry/Convert Again, Clear Completed/All, output-folder affordance,
+  drag-over feedback and inline invalid reasons.
+- [x] **D8 — Light/dark, typography and localization:** light and dark captures,
+  sentence-case section labels, file/file pluralization, four-language empty and
+  populated states, CJK line-height review, monospaced dimensions/paths.
+- [ ] **D9 — Accessibility and keyboard:** AX labels are added for rows, pickers,
+  fields, previews and icon-only controls; Cmd+Return keyboard-only conversion was
+  verified. Live VoiceOver announcements, full focus-order review and Reduce Motion
+  remain manual acceptance.
+- [ ] **D10 — Design acceptance gate:** screenshot matrix, heuristic scorecard and
+  review record are in `DESIGN.md`/`TESTING.md`; final gate remains open until the
+  manual VoiceOver/focus-order pass is recorded.
 
 ## P1 — Workflow and product behavior
 

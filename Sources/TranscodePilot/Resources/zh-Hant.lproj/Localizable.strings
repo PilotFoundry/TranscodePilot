@@ -13,7 +13,7 @@
 "Convert" = "開始轉換";
 "Notice" = "提示";
 "OK" = "好";
-"OUTPUT" = "輸出設定";
+"OUTPUT" = "輸出";
 "Format" = "格式";
 "Audio quality" = "音訊品質";
 "Width in pixels" = "寬度（像素）";
@@ -57,7 +57,7 @@
 "Show All" = "顯示全部";
 "Output folder" = "輸出檔案夾";
 "TranscodePilot Help" = "TranscodePilot 輔助說明";
-"Supported inputs: SVG, PNG, JPEG, HEIC, MP4. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved." = "支援的輸入：SVG、PNG、JPEG、HEIC、MP4。輸出：PNG、JPEG、MP3。檔案只在本機處理，來源檔案與既有輸出不會被覆寫。";
+"Supported inputs: SVG, PNG, JPEG, HEIC, MP4, MKV. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved." = "支援的輸入：SVG、PNG、JPEG、HEIC、MP4、MKV。輸出：PNG、JPEG、MP3。檔案只在本機處理，來源檔案與既有輸出不會被覆寫。";
 "Conversion settings are invalid." = "轉換設定無效。";
 "This format is not supported." = "不支援此格式。";
 "The source file cannot be read." = "無法讀取來源檔案。";
@@ -85,3 +85,9 @@
 "Queue actions" = "佇列操作";
 "Some conversion engines are missing." = "部分轉換引擎缺少。";
 "Convert again" = "重新轉換";
+"SOURCE" = "來源";
+"Source is read-only; existing outputs are never overwritten." = "來源檔案為唯讀；既有輸出不會被覆寫。";
+"Files stay on this Mac. Sources and existing outputs are never overwritten." = "檔案只在本機處理；來源檔案和既有輸出不會被覆寫。";
+"file" = "個檔案";
+"Pending" = "待處理";
+"Output preview" = "輸出預覽";

@@ -13,7 +13,7 @@
 "Convert" = "Convert";
 "Notice" = "Notice";
 "OK" = "OK";
-"OUTPUT" = "OUTPUT";
+"OUTPUT" = "Output";
 "Format" = "Format";
 "Audio quality" = "Audio quality";
 "Width in pixels" = "Width in pixels";
@@ -57,7 +57,7 @@
 "Show All" = "Show All";
 "Output folder" = "Output folder";
 "TranscodePilot Help" = "TranscodePilot Help";
-"Supported inputs: SVG, PNG, JPEG, HEIC, MP4. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved." = "Supported inputs: SVG, PNG, JPEG, HEIC, MP4. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved.";
+"Supported inputs: SVG, PNG, JPEG, HEIC, MP4, MKV. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved." = "Supported inputs: SVG, PNG, JPEG, HEIC, MP4, MKV. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved.";
 "Conversion settings are invalid." = "Conversion settings are invalid.";
 "This format is not supported." = "This format is not supported.";
 "The source file cannot be read." = "The source file cannot be read.";
@@ -85,3 +85,9 @@
 "Queue actions" = "Queue actions";
 "Some conversion engines are missing." = "Some conversion engines are missing.";
 "Convert again" = "Convert again";
+"SOURCE" = "Source";
+"Source is read-only; existing outputs are never overwritten." = "Source is read-only; existing outputs are never overwritten.";
+"Files stay on this Mac. Sources and existing outputs are never overwritten." = "Files stay on this Mac. Sources and existing outputs are never overwritten.";
+"file" = "file";
+"Pending" = "Pending";
+"Output preview" = "Output preview";

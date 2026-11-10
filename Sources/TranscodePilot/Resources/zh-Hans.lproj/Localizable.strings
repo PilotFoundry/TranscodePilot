@@ -13,7 +13,7 @@
 "Convert" = "开始转换";
 "Notice" = "提示";
 "OK" = "好";
-"OUTPUT" = "输出设置";
+"OUTPUT" = "输出";
 "Format" = "格式";
 "Audio quality" = "音频质量";
 "Width in pixels" = "宽度（像素）";
@@ -57,7 +57,7 @@
 "Show All" = "显示全部";
 "Output folder" = "输出文件夹";
 "TranscodePilot Help" = "TranscodePilot 帮助";
-"Supported inputs: SVG, PNG, JPEG, HEIC, MP4. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved." = "支持的输入：SVG、PNG、JPEG、HEIC、MP4。输出：PNG、JPEG、MP3。文件只在本机处理，源文件和已有输出不会被覆盖。";
+"Supported inputs: SVG, PNG, JPEG, HEIC, MP4, MKV. Outputs: PNG, JPEG, MP3. Files stay on this Mac; sources and existing output are preserved." = "支持的输入：SVG、PNG、JPEG、HEIC、MP4、MKV。输出：PNG、JPEG、MP3。文件只在本机处理，源文件和已有输出不会被覆盖。";
 "Conversion settings are invalid." = "转换设置无效。";
 "This format is not supported." = "不支持该格式。";
 "The source file cannot be read." = "无法读取源文件。";
@@ -85,3 +85,9 @@
 "Queue actions" = "队列操作";
 "Some conversion engines are missing." = "部分转换引擎缺失。";
 "Convert again" = "重新转换";
+"SOURCE" = "来源";
+"Source is read-only; existing outputs are never overwritten." = "源文件为只读；已有输出不会被覆盖。";
+"Files stay on this Mac. Sources and existing outputs are never overwritten." = "文件只在本机处理；源文件和已有输出不会被覆盖。";
+"file" = "个文件";
+"Pending" = "待处理";
+"Output preview" = "输出预览";
