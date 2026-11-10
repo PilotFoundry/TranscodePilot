@@ -9,23 +9,19 @@ struct MainView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 24)).foregroundStyle(.orange)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("TranscodePilot").font(.title3.weight(.semibold))
-                    Text(L("Local media conversion")).font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button { model.chooseFiles() } label: { Label(L("Add files"), systemImage: "plus") }
-                    .keyboardShortcut("o")
-            }.padding(20)
-            Divider()
             if model.items.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "square.and.arrow.down").font(.system(size: 48, weight: .ultraLight)).foregroundStyle(.orange)
+                VStack(spacing: Design.Spacing.lg) {
+                    if let icon = emptyStateIcon {
+                        Image(nsImage: icon)
+                            .resizable()
+                            .interpolation(.high)
+                            .frame(width: 76, height: 76)
+                            .accessibilityHidden(true)
+                    }
                     Text(L("Drop files here")).font(.title2.weight(.medium))
                     Text("SVG · PNG · JPEG · HEIC · MP4").font(.callout.monospaced()).foregroundStyle(.secondary)
-                    Button(L("Choose files")) { model.chooseFiles() }.buttonStyle(.borderedProminent).tint(.orange)
+                    Button(L("Choose files")) { model.chooseFiles() }
+                        .buttonStyle(.borderedProminent)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 HSplitView {
@@ -54,7 +50,9 @@ struct MainView: View {
                             Text("\(model.items.count) " + L("files")).font(.caption).foregroundStyle(.secondary)
                             Spacer()
                             Button { model.removeSelected() } label: { Image(systemName: "minus") }
-                                .disabled(model.running || model.selection == nil).help(L("Remove"))
+                                .disabled(model.running || model.selection == nil)
+                                .help(L("Remove"))
+                                .accessibilityLabel(L("Remove"))
                         }.padding(12)
                     }.frame(minWidth: 290, idealWidth: 350)
                     if let index = model.selectedIndex {
@@ -65,24 +63,29 @@ struct MainView: View {
                 }
             }
             Divider()
-            HStack(spacing: 12) {
-                Button { model.chooseFolder() } label: {
-                    Label(model.outputFolder?.lastPathComponent ?? L("Choose output folder"), systemImage: "folder")
+            HStack(spacing: Design.Spacing.sm) {
+                if let folder = model.outputFolder {
+                    Label(folder.lastPathComponent, systemImage: "folder")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
-                }.disabled(model.running).help(model.outputFolder?.path ?? L("Choose output folder"))
+                        .help(folder.path)
+                } else {
+                    Text(L("Choose output folder")).font(.caption).foregroundStyle(.secondary)
+                }
                 Spacer()
                 if model.running {
                     Text(L("Converting")).font(.caption).foregroundStyle(.secondary)
                     Button(L("Cancel")) { model.cancel() }.keyboardShortcut(.cancelAction)
                 } else {
                     Button(L(model.items.contains { $0.status == "Failed" || $0.status == "Cancelled" } ? "Retry remaining" : "Convert")) { model.start() }
-                        .buttonStyle(.borderedProminent).tint(.orange).keyboardShortcut(.return, modifiers: .command)
+                        .buttonStyle(.borderedProminent).keyboardShortcut(.return, modifiers: .command)
                         .disabled(!model.canStart)
                 }
-            }.padding(16)
+            }.padding(Design.Spacing.md)
         }
         .frame(minWidth: 760, minHeight: 540)
-        .background(model.targeted ? Color.orange.opacity(0.08) : Color(nsColor: .windowBackgroundColor))
+        .background(model.targeted ? Design.Palette.accent.opacity(0.08) : Color(nsColor: .windowBackgroundColor))
         .onDrop(of: [.fileURL], isTargeted: $model.targeted) { providers in
             for provider in providers {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
@@ -94,6 +97,22 @@ struct MainView: View {
         .alert(L("Notice"), isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } })) {
             Button(L("OK")) { model.notice = nil }
         } message: { Text(model.notice ?? "") }
+    }
+
+    private var emptyStateIcon: NSImage? {
+        if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let image = NSImage(contentsOf: url) {
+            return image
+        }
+        if let resources = Bundle.main.resourceURL {
+            let url = resources.appendingPathComponent("AppIcon.icns")
+            if let image = NSImage(contentsOf: url) { return image }
+        }
+        if let moduleResources = Bundle.module.url(forResource: "Resources", withExtension: nil) {
+            let url = moduleResources.appendingPathComponent("AppIcon.icns")
+            if let image = NSImage(contentsOf: url) { return image }
+        }
+        return NSApp.applicationIconImage
     }
 
     func setting<T>(_ item: ConversionItem, _ keyPath: WritableKeyPath<ConversionOptions, T>) -> Binding<T> {

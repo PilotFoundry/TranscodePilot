@@ -1,7 +1,7 @@
 SWIFT ?= swift
 SWIFT_FLAGS ?=
 
-.PHONY: build check app run doctor clean
+.PHONY: build check app run doctor icon clean
 build:
 	$(SWIFT) build $(SWIFT_FLAGS)
 check:
@@ -12,5 +12,7 @@ run: app
 	open .build/TranscodePilot.app
 doctor:
 	./scripts/doctor
+icon:
+	./scripts/build-icon
 clean:
 	rm -rf .build
