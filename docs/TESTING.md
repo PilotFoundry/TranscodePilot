@@ -11,6 +11,11 @@ checks:
   aspect ratios.
 - MP3 codec, silent-video rejection, child-process cancellation grace, cancelled
   conversion before publication and sanitized stored preferences.
+- SVG effects corpus: linear/radial gradients, Gaussian blur, feColorMatrix, mask,
+  clipPath and fill-opacity transparency, including PNG alpha sampling and JPEG
+  white flattening. Fixtures live in
+  `Sources/TranscodePilotChecks/Fixtures/SVGEffects/` and run on every `make check`;
+  add a case or adjust an assertion there when renderer behavior changes.
 
 In a restricted or sandboxed build environment (for example the agent session
 used for the 2026-11-06 verification), SwiftPM's internal sandbox cannot be
@@ -50,9 +55,11 @@ with AAC mono audio converted to MP3 192 kbps, 44.1 kHz mono, 11.469206 s versus
 SVG (“Airy Blue Sky with Puffy Clouds”, 1672×941, 381 paths, opaque) rendered at
 1× (1672×941) and 4× (6688×3764) with all paths and colors present.
 
-The tool is a local verification aid, not a runtime dependency. Not covered: real
-SVGs with gradients/masks/filters/alpha, SVG/bitmap in-flight cancellation,
-VoiceOver/light-dark, exFAT or network destinations, Intel and macOS 14.
+The tool is a local verification aid, not a runtime dependency. Synthetic
+gradient/filter/mask/clip/transparency fixtures are covered by `make check`;
+real-file visual acceptance of those effects is still pending. Not covered:
+SVG/bitmap in-flight cancellation, VoiceOver/light-dark, exFAT or network
+destinations, Intel and macOS 14.
 
 Only recorded automated checks count as exercised. Missing fonts may substitute;
 the app does not claim pixel equivalence with browsers or other SVG renderers.

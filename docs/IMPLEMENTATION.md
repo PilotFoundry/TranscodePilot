@@ -115,3 +115,14 @@ development verification aid, not an application dependency.
 - Remaining manual acceptance: real SVGs with gradients/masks/filters/alpha,
   SVG/bitmap in-flight cancellation, VoiceOver/light-dark, exFAT/network
   destinations, Intel and macOS 14.
+
+## SVG effects fixture corpus — 2026-11-10
+
+- Added `Sources/TranscodePilotChecks/Fixtures/SVGEffects/` (synthetic SVGs plus a
+  README): linear and radial gradients, Gaussian blur, `feColorMatrix`, mask,
+  clipPath and fill-opacity transparency.
+- `make check` now converts every fixture and samples real output pixels:
+  gradient stops, transparent regions, blur bleed, red-to-green matrix output,
+  masked halves, clipped corners, partial alpha and JPEG white flattening.
+- These fixtures are intentionally part of the checks target resources, so
+  `make check` exercises them on every conversion iteration.

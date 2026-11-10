@@ -111,9 +111,10 @@ headless refs/clicks; Accessibility and Screen Recording granted by the user):
   compare gradients, masks, filters, CJK typography, alpha edges and audio duration.
   Partial 2026-11-10: CJK swimlane and complex-path cloud SVGs rendered correctly
   at 1×/2×/4×; a no-audio MP4 was correctly rejected; a second MP4 with AAC audio
-  converted to MP3 at 192 kbps with a ~1.5 ms duration difference. Still need real
-  SVGs with gradients/masks/filters/alpha. Samples stay local and are not
-  committed.
+  converted to MP3 at 192 kbps with a ~1.5 ms duration difference. Synthetic
+  gradient/filter/mask/clip/transparency fixtures now run in `make check`, but
+  real-file visual acceptance of those effects is still pending. Samples stay
+  local and are not committed.
 - [ ] **User-friendly failures:** localize app-owned errors, distinguish missing
   engine/no audio/invalid SVG/permission/disk-full cases, and offer a recovery action.
 
@@ -177,6 +178,8 @@ These were found while reviewing the plan and are not yet scheduled.
 - [ ] Cover real HEIC, PNG → JPG, JPEG → PNG, mirrored EXIF orientations, ICC/P3
   input and the documented sRGB/metadata/HDR policy.
 - [ ] Cover viewBox/units/filters/CJK SVGs and decoded/CDATA external-resource cases.
+  Synthetic gradient/filter/mask/clip/transparency fixtures are covered; viewBox/
+  units, automated CJK and decoded/CDATA cases remain.
 - [ ] Test actual output duration, bitrate tolerance, multiple audio streams,
   corrupt MP4s, long filenames and non-ASCII/space-containing paths.
 - [ ] Test timeout, real conversion cancellation, denied write, engine missing,
