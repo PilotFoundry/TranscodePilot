@@ -5,7 +5,6 @@ import SwiftUI
     let model = AppModel()
     var window: NSWindow!
     private var terminationInProgress = false
-    private var terminationTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
@@ -19,9 +18,11 @@ import SwiftUI
         let menu = NSMenu()
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: L("About TranscodePilot"), action: #selector(about), keyEquivalent: "")
+        let aboutItem = appMenu.addItem(withTitle: L("About TranscodePilot"), action: #selector(about), keyEquivalent: "")
+        aboutItem.target = self
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: L("Quit TranscodePilot"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quitItem = appMenu.addItem(withTitle: L("Quit TranscodePilot"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        quitItem.target = NSApp
         appItem.submenu = appMenu
         menu.addItem(appItem)
         let editItem = NSMenuItem()
@@ -56,27 +57,26 @@ import SwiftUI
         // from wedging termination forever.
         terminationInProgress = true
         model.cancel()
-        let deadline = Date().addingTimeInterval(5)
-        let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
+        scheduleTerminationCheck(deadline: Date().addingTimeInterval(5))
+        return .terminateLater
+    }
+
+    private func scheduleTerminationCheck(deadline: Date) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             MainActor.assumeIsolated {
-                guard let self, self.terminationInProgress else {
-                    timer.invalidate()
-                    return
-                }
+                guard let self, self.terminationInProgress else { return }
                 if !self.model.running || Date() >= deadline {
                     self.finishTermination()
+                } else {
+                    self.scheduleTerminationCheck(deadline: deadline)
                 }
             }
         }
-        terminationTimer = timer
-        return .terminateLater
     }
 
     private func finishTermination() {
         guard terminationInProgress else { return }
         terminationInProgress = false
-        terminationTimer?.invalidate()
-        terminationTimer = nil
         NSApp.reply(toApplicationShouldTerminate: true)
     }
 
@@ -97,11 +97,6 @@ import SwiftUI
             NSApp.activate(ignoringOtherApps: true)
         }
         return true
-    }
-
-    func applicationWillTerminate(_ notification: Notification) {
-        terminationTimer?.invalidate()
-        terminationTimer = nil
     }
 }
 
