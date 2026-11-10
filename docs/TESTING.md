@@ -17,6 +17,10 @@ checks:
   external href are rejected; self-contained `@media` remains accepted.
 - Preference sanitizing includes kind-aware scale defaults and saved-width bounds.
 - Source mutation detection and age-based temporary-directory cleanup.
+- HEIC input (ImageIO-generated), Display P3 → sRGB normalization, mirrored EXIF,
+  CJK SVG ink, CDATA external-resource rejection, multiple audio tracks, MP3
+  bitrate tolerance, long/non-ASCII paths, timeout, denied write and concurrent
+  publication collisions.
 - SVG sizing fixtures: physical units at 96 dpi, viewBox-only, percentage,
   missing-one-dimension, fractional sizes, explicit requested width and rejection
   of unsupported percentage/missing-dimension documents.

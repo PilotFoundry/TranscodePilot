@@ -140,6 +140,153 @@ func checkReliabilityHardening(in folder: URL) async throws {
     try? FileManager.default.removeItem(at: fresh)
 }
 
+func checkRegressionExtras(in folder: URL, svg: URL, ffmpeg: URL, probe: URL) async throws {
+    var options = ConversionOptions()
+    options.width = 100
+
+    // Non-ASCII/space-containing destination and a long but valid filename.
+    let unicodeFolder = folder.appendingPathComponent("空格 目录", isDirectory: true)
+    try FileManager.default.createDirectory(at: unicodeFolder, withIntermediateDirectories: true)
+    let unicodeOutput = try await Converter.convert(svg, to: unicodeFolder, options: options)
+    try expect(FileManager.default.fileExists(atPath: unicodeOutput.path), "non-ASCII/space output path works")
+
+    let longStem = String(repeating: "长", count: 60)
+    let longSource = folder.appendingPathComponent(longStem + ".svg")
+    try FileManager.default.copyItem(at: svg, to: longSource)
+    let longOutput = try await Converter.convert(longSource, to: folder, options: options)
+    try expect(FileManager.default.fileExists(atPath: longOutput.path), "long source filename converts")
+
+    // Multiple audio tracks: the app must still publish the first audio stream.
+    let multi = folder.appendingPathComponent("multi-audio.mkv")
+    _ = try await ProcessRunner.run(ffmpeg, ["-v", "error",
+        "-f", "lavfi", "-i", "color=c=navy:s=64x64:d=1",
+        "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+        "-f", "lavfi", "-i", "sine=frequency=880:duration=1",
+        "-map", "0:v", "-map", "1:a", "-map", "2:a",
+        "-c:v", "mpeg4", "-c:a", "aac", "-shortest", multi.path])
+    var audioOptions = ConversionOptions()
+    audioOptions.format = .mp3
+    let multiMp3 = try await Converter.convert(multi, to: folder, options: audioOptions)
+    let multiInfo = String(decoding: try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "stream=codec_name:format=duration,bit_rate", "-of", "default=noprint_wrappers=1", multiMp3.path]), as: UTF8.self)
+    try expect(multiInfo.contains("codec_name=mp3"), "multiple-audio MKV publishes MP3")
+    try expect(multiInfo.contains("duration="), "multiple-audio MKV publishes a duration")
+    if let bitrateLine = multiInfo.split(whereSeparator: \.isNewline).first(where: { $0.hasPrefix("bit_rate=") }),
+       let bitrate = Int(bitrateLine.dropFirst("bit_rate=".count)) {
+        try expect((160_000...230_000).contains(bitrate), "MP3 bitrate is near the requested 192 kbps")
+    }
+
+    // Timeout and denied-write behavior.
+    var timedOut = false
+    do { _ = try await ProcessRunner.run(URL(fileURLWithPath: "/bin/sleep"), ["2"], timeout: 0.2) }
+    catch { timedOut = error.localizedDescription.contains("timed out") }
+    try expect(timedOut, "child process timeout is reported")
+
+    let denied = folder.appendingPathComponent("denied-output", isDirectory: true)
+    try FileManager.default.createDirectory(at: denied, withIntermediateDirectories: true)
+    try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: denied.path)
+    defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: denied.path) }
+    var deniedRejected = false
+    do { _ = try await Converter.convert(svg, to: denied, options: options) }
+    catch { deniedRejected = true }
+    try expect(deniedRejected, "read-only output folder is rejected")
+
+    // Concurrent publication must never overwrite either result.
+    let collisionFolder = folder.appendingPathComponent("collision", isDirectory: true)
+    try FileManager.default.createDirectory(at: collisionFolder, withIntermediateDirectories: true)
+    let concurrent = try await withThrowingTaskGroup(of: URL.self) { group in
+        for _ in 0..<2 {
+            group.addTask { try await Converter.convert(svg, to: collisionFolder, options: options) }
+        }
+        var outputs: [URL] = []
+        for try await output in group { outputs.append(output) }
+        return outputs
+    }
+    try expect(Set(concurrent.map(\.path)).count == 2, "concurrent conversions choose distinct names")
+    for output in concurrent { try expect(FileManager.default.fileExists(atPath: output.path), "concurrent output exists") }
+
+    // HEIC and mirrored EXIF are covered when ImageIO can create those fixtures.
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    if let context = CGContext(data: nil, width: 20, height: 10, bitsPerComponent: 8,
+                               bytesPerRow: 0, space: colorSpace,
+                               bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) {
+        context.setFillColor(red: 1, green: 0, blue: 0, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: 10, height: 10))
+        context.setFillColor(red: 0, green: 0, blue: 1, alpha: 1)
+        context.fill(CGRect(x: 10, y: 0, width: 10, height: 10))
+        if let image = context.makeImage() {
+            let heic = folder.appendingPathComponent("fixture.heic")
+            if let destination = CGImageDestinationCreateWithURL(heic as CFURL, "public.heic" as CFString, 1, nil) {
+                CGImageDestinationAddImage(destination, image, nil)
+                if CGImageDestinationFinalize(destination) {
+                    var heicOptions = ConversionOptions()
+                    heicOptions.format = .png
+                    heicOptions.width = 20
+                    let heicOutput = try await Converter.convert(heic, to: folder, options: heicOptions)
+                    let decoded = try pixels(heicOutput)
+                    try expect(decoded.width == 20 && decoded.height == 10, "HEIC input decodes")
+                }
+            }
+            let mirrored = folder.appendingPathComponent("mirrored.jpg")
+            if let destination = CGImageDestinationCreateWithURL(mirrored as CFURL, "public.jpeg" as CFString, 1, nil) {
+                CGImageDestinationAddImage(destination, image, [kCGImagePropertyOrientation: 2] as CFDictionary)
+                if CGImageDestinationFinalize(destination) {
+                    var mirrorOptions = ConversionOptions()
+                    mirrorOptions.format = .png
+                    mirrorOptions.width = 20
+                    let mirrorOutput = try await Converter.convert(mirrored, to: folder, options: mirrorOptions)
+                    let mirrorImage = try pixels(mirrorOutput)
+                    let left = try rgba(mirrorImage, x: 2, y: 5)
+                    let right = try rgba(mirrorImage, x: 17, y: 5)
+                    try expect(left.b > 0.5 && left.r < 0.5 && right.r > 0.5 && right.b < 0.5,
+                               "mirrored EXIF orientation is applied")
+                }
+            }
+        }
+    }
+
+    // Display P3 input must be normalized to the documented sRGB output.
+    if let p3 = CGColorSpace(name: CGColorSpace.displayP3),
+       let context = CGContext(data: nil, width: 20, height: 10, bitsPerComponent: 8,
+                               bytesPerRow: 0, space: p3,
+                               bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) {
+        context.setFillColor(red: 1, green: 0, blue: 0, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: 20, height: 10))
+        if let image = context.makeImage() {
+            let p3URL = folder.appendingPathComponent("display-p3.png")
+            if let destination = CGImageDestinationCreateWithURL(p3URL as CFURL, "public.png" as CFString, 1, nil) {
+                CGImageDestinationAddImage(destination, image, nil)
+                if CGImageDestinationFinalize(destination) {
+                    var p3Options = ConversionOptions()
+                    p3Options.format = .png
+                    p3Options.width = 20
+                    let p3Output = try await Converter.convert(p3URL, to: folder, options: p3Options)
+                    let p3Image = try pixels(p3Output)
+                    let name = (p3Image.colorSpace?.name as String?) ?? ""
+                    try expect(name.lowercased().contains("srgb"), "Display P3 input is normalized to sRGB")
+                }
+            }
+        }
+    }
+
+    // CJK text must produce visible ink rather than a blank render.
+    let cjk = folder.appendingPathComponent("cjk.svg")
+    try Data(#"<svg xmlns="http://www.w3.org/2000/svg" width="160" height="48" viewBox="0 0 160 48"><rect width="160" height="48" fill="white"/><text x="8" y="34" font-size="28" font-family="PingFang SC, Hiragino Sans">测试</text></svg>"#.utf8).write(to: cjk)
+    let cjkOutput = try await Converter.convert(cjk, to: folder, options: options)
+    let cjkImage = try pixels(cjkOutput)
+    var dark = false
+    let cjkBitmap = NSBitmapImageRep(cgImage: cjkImage)
+    for y in stride(from: 0, to: cjkBitmap.pixelsHigh, by: 2) {
+        for x in stride(from: 0, to: cjkBitmap.pixelsWide, by: 2) {
+            if let color = cjkBitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
+               color.redComponent < 0.5, color.greenComponent < 0.5, color.blueComponent < 0.5 {
+                dark = true; break
+            }
+        }
+        if dark { break }
+    }
+    try expect(dark, "CJK SVG text produces visible ink")
+}
+
 func checkSVGSecurity(in folder: URL) async throws {
     let safeURL = try fixtureURL("Fixtures/SVGSecurity/safe-media-query.svg")
     var safeOptions = ConversionOptions()
@@ -247,6 +394,7 @@ func checkSVGSizing(in folder: URL) async throws {
                 "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><image href='file:///etc/passwd'/></svg>",
                 "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><foreignObject/></svg>",
                 "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><style>@import 'https://example.com/a.css';</style></svg>",
+                "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><style><![CDATA[ rect { fill: url(https://example.com/x); } ]]></style></svg>",
                 "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><script/></svg>",
                 "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><rect style='fill:u&#114;l(https://example.com/a)'/></svg>",
                 "<svg xmlns='http://www.w3.org/2000/svg' width='999999' height='999999'/>"
@@ -384,6 +532,7 @@ func checkSVGSizing(in folder: URL) async throws {
             do { _ = try await Converter.convert(silent, to: folder, options: options) }
             catch { rejected = true }
             try expect(rejected, "video without audio rejected")
+            try await checkRegressionExtras(in: folder, svg: svg, ffmpeg: ffmpeg, probe: probe)
             let task = Task { try await ProcessRunner.run(URL(fileURLWithPath: "/bin/sleep"), ["10"]) }
             try await Task.sleep(nanoseconds: 100_000_000)
             let cancellationStart = Date()
@@ -396,7 +545,7 @@ func checkSVGSizing(in folder: URL) async throws {
             print("PASS: MP4/MKV → MP3, corrupt containers, missing audio, child process cancellation and temporary cleanup")
             print("PASS: SVG pixels, transparency, JPEG background, bitmap resize, collision safety, source preservation and unsafe input")
             print("PASS: input bounds, symlink source, cancelled conversion, planner estimates and preference sanitizing")
-            print("PASS: SVG effects, sizing, trust-boundary and reliability-hardening fixtures")
+            print("PASS: SVG effects, sizing, trust-boundary, reliability-hardening and regression extras")
         } catch {
             fputs("\(error.localizedDescription)\n", stderr)
             exit(1)

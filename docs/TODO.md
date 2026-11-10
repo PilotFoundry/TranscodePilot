@@ -55,6 +55,9 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
   kind-aware scale defaults, engine warning and plist-backed About version.
 - [x] Crash-temp cleanup, disk-space preflight, source signatures, stronger output
   verification and PATH-aware engine discovery.
+- [x] Regression extras: HEIC, Display P3, mirrored EXIF, CJK, CDATA rejection,
+  multiple audio tracks, bitrate tolerance, long/non-ASCII paths, timeout, denied
+  write and concurrent collisions.
 - [x] Ad-hoc app build/signature; four `make check` PASS groups; doctor pass.
 
 ## Next landing plan
@@ -245,17 +248,18 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 ## P1 — Meaningful regression coverage
 
 - [ ] Assert actual transparent pixels and colored content, not only an alpha
-  channel or image dimensions. Synthetic effects fixtures now do this; add HEIC
-  and real opaque/alpha edge cases. Check edge sharpness at enlarged SVG sizes.
-- [ ] Cover real HEIC, PNG → JPG, JPEG → PNG, mirrored EXIF orientations, ICC/P3
-  input and the documented sRGB/metadata/HDR policy.
-- [ ] Cover CJK SVGs and decoded/CDATA external-resource cases. Synthetic
-  gradient/filter/mask/clip/transparency and viewBox/unit/percentage/missing-size
-  fixtures are covered; automated CJK and decoded/CDATA cases remain.
-- [ ] Test actual output duration, bitrate tolerance, multiple audio streams,
-  corrupt MP4s, long filenames and non-ASCII/space-containing paths.
+  channel or image dimensions. Synthetic effects fixtures do this; still add a
+  real opaque/alpha edge case and enlarged-SVG edge-sharpness assertion.
+- [x] Cover HEIC (ImageIO-generated), PNG → JPG, JPEG → PNG, mirrored EXIF,
+  Display P3 → sRGB conversion and the documented metadata policy. Real camera
+  HEIC/ICC files remain a manual acceptance item.
+- [x] Cover CJK SVGs and CDATA/decoded external-resource rejection.
+- [x] Test actual output duration, bitrate tolerance, multiple audio streams,
+  corrupt MP4/MKV, long filenames and non-ASCII/space-containing paths.
 - [ ] Test timeout, real conversion cancellation, denied write, engine missing,
   concurrent filename collisions, output disconnect and cleanup after failure.
+  Timeout, cancellation, denied write and concurrent collisions are automated;
+  engine-missing and output-disconnect need injected/manual fixtures.
 - [ ] Cover queue state transitions and termination; core tests still do not test
   the UI model (GUI quit behavior is manually verified).
 - [ ] Put localization parity, plist/bundle/signature checks into repeatable

@@ -220,3 +220,13 @@ development verification aid, not an application dependency.
 - `Tools.find` searches bundled Helpers, Homebrew paths and PATH; `scripts/doctor`
   uses the same order and reports engine versions.
 - Regression checks cover source mutation and stale-temp cleanup.
+
+## Regression expansion — 2026-11-10
+
+- Additional checks cover HEIC via ImageIO fixtures, Display P3 normalization to
+  sRGB, mirrored EXIF orientation, CJK SVG ink, CDATA external references,
+  multiple audio tracks, MP3 bitrate tolerance, long filenames, non-ASCII/space
+  paths, child timeout, read-only destinations and concurrent publication.
+- Remaining manual-only coverage is documented: real camera HEIC/ICC files,
+  engine-missing/output-disconnect injection, UI queue state-machine tests and
+  the four-language screenshots/VoiceOver pass.
