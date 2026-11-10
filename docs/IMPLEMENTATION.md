@@ -259,7 +259,9 @@ development verification aid, not an application dependency.
 - Huge MP4: 1.2 GB remux with three audio tracks → same 1410.816 s / 192,006 bps in
   ~11.5 s; source hash unchanged.
 - Effects visual pass: generated gradient/blur/mask/clip/alpha/CJK SVG and the real
-  complex-path cloud SVG rendered correctly.
+  complex-path cloud SVG rendered correctly; enlarged edges remained sharp.
+- Changing options keeps the previous result card reachable until a replacement is
+  published; missing/moved results are shown explicitly.
 - Design D1 matrix and keyboard/AX pass recorded in `DESIGN.md`/`TESTING.md`.
 - Remaining external/manual items: real exFAT/network volume, TCC folder prompt,
   live VoiceOver/focus-order, engine rlimit caps, hosted CI run, Developer ID,

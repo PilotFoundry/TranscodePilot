@@ -139,7 +139,7 @@ struct ConversionItem: Identifiable {
     func update(_ options: ConversionOptions) {
         guard !running, let index = selectedIndex else { return }
         items[index].options = options
-        items[index].output = nil
+        // Keep the previous result reachable while the next run is prepared.
         items[index].error = nil
         items[index].failureCode = nil
         items[index].status = "Ready"
@@ -239,7 +239,6 @@ struct ConversionItem: Identifiable {
             guard items[index].status == "Failed" || items[index].status == "Cancelled" else { return }
         }
         items[index].status = "Ready"
-        items[index].output = nil
         items[index].error = nil
         items[index].failureCode = nil
         refreshValidation(at: index)

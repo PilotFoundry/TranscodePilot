@@ -273,6 +273,19 @@ func checkRegressionExtras(in folder: URL, svg: URL, ffmpeg: URL, probe: URL) as
         }
     }
 
+    // Enlarged SVG edges must stay sharp (one source pixel becomes a crisp band).
+    let edge = folder.appendingPathComponent("edge.svg")
+    try Data(#"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="white"/><rect x="50" y="0" width="1" height="100" fill="red"/></svg>"#.utf8).write(to: edge)
+    var edgeOptions = ConversionOptions()
+    edgeOptions.format = .png
+    edgeOptions.width = 800
+    let edgeOutput = try await Converter.convert(edge, to: folder, options: edgeOptions)
+    let edgeImage = try pixels(edgeOutput)
+    let edgeLine = try rgba(edgeImage, x: 400, y: 400)
+    let edgeClear = try rgba(edgeImage, x: 420, y: 400)
+    try expect(edgeLine.r > 0.8 && edgeLine.g < 0.2, "enlarged SVG edge keeps its color")
+    try expect(edgeClear.r > 0.8 && edgeClear.g > 0.8 && edgeClear.b > 0.8, "enlarged SVG edge stays crisp")
+
     // CJK text must produce visible ink rather than a blank render.
     let cjk = folder.appendingPathComponent("cjk.svg")
     try Data(#"<svg xmlns="http://www.w3.org/2000/svg" width="160" height="48" viewBox="0 0 160 48"><rect width="160" height="48" fill="white"/><text x="8" y="34" font-size="28" font-family="PingFang SC, Hiragino Sans">测试</text></svg>"#.utf8).write(to: cjk)

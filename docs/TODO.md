@@ -223,15 +223,16 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 ## P1 — Workflow and product behavior
 
 - [x] Add single-task retry/reconvert and clear-completed/clear-queue actions.
-- [ ] Preserve access to existing output while changing options where practical
-  (changing settings currently clears the previous preview/result).
+- [x] Preserve access to existing output while changing options: the previous
+  result card stays reachable until a new run publishes its replacement.
 - [x] Define queue behavior for files added mid-run: new files join the next run;
   drop ordering is stable and completed/failed/pending counts are shown.
 - [x] Clarify apply-to-similar scope: completed work is no longer reset.
 - [x] Preserve useful size preferences explicitly: width and scale are saved;
   photos default to 1× while SVG/video keep 2×.
-- [ ] Display output path unambiguously when two folders share a name; handle
-  moved/deleted output, revoked destination and unmounted volumes gracefully.
+- [x] Display output path unambiguously (home-abbreviated full path with middle
+  truncation); moved/deleted results are shown as unavailable, and missing or
+  unwritable destinations are rejected before conversion.
 - [x] Show engine readiness before conversion in the bottom bar; install commands
   remain in developer help rather than the normal recovery flow.
 - [ ] Verify drag/drop, Finder Open With and opening files before window creation;
@@ -263,9 +264,9 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 
 ## P1 — Meaningful regression coverage
 
-- [ ] Assert actual transparent pixels and colored content, not only an alpha
-  channel or image dimensions. Synthetic effects fixtures do this; still add a
-  real opaque/alpha edge case and enlarged-SVG edge-sharpness assertion.
+- [x] Assert actual transparent/colored pixels plus enlarged-SVG edge sharpness;
+  HEIC/Display P3 and synthetic effects are covered. A real camera opaque/alpha
+  file remains optional manual evidence.
 - [x] Cover HEIC (ImageIO-generated), PNG → JPG, JPEG → PNG, mirrored EXIF,
   Display P3 → sRGB conversion and the documented metadata policy. Real camera
   HEIC/ICC files remain a manual acceptance item.
