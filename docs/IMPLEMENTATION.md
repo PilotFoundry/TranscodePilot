@@ -112,6 +112,12 @@ development verification aid, not an application dependency.
 - Real user complex-path SVG (“Airy Blue Sky with Puffy Clouds”, 1672×941, 381
   paths, opaque): rendered at 1× (1672×941) and 4× (6688×3764); paths, colors and
   edges were visually complete.
+- Generated MKV sample (H.264 + AAC 440 Hz first track, 880 Hz second track):
+  converted to an 8.000 s MP3; FFT dominant frequency was 440 Hz, confirming
+  first-track selection; source hash unchanged.
+- Smallest home MKV (23.5-minute screen recording, 81.7 MB, stereo AAC):
+  converted through the GUI to a 1410.667 s MP3 (source duration 1410.734 s);
+  source hash unchanged; the personal MP3 output was deleted after verification.
 - Remaining manual acceptance: real SVGs with gradients/masks/filters/alpha,
   SVG/bitmap in-flight cancellation, VoiceOver/light-dark, exFAT/network
   destinations, Intel and macOS 14.
