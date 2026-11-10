@@ -26,10 +26,11 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
   in `Fixtures/SVGSizing/` covers physical units, viewBox/percentage/missing
   dimensions, explicit width and fractional output.
 - `make check` has four PASS groups; MKV → MP3 and SVG sizing are covered.
-- Remaining P0 blockers: SVG trust residual risk, in-flight SVG/bitmap
-  cancellation acceptance, non-APFS real-volume acceptance, huge-file MP4
-  acceptance, and real-file visual acceptance of effects. App-owned error UX,
-  typed failures and recovery actions are implemented.
+- Remaining P0 blockers: SVG trust residual risk and non-APFS real-volume
+  acceptance (mount unavailable in this environment). In-flight SVG/bitmap
+  cancellation, huge MP4/MKV conversion and a generated+real effects visual pass
+  are now verified; app-owned error UX, typed failures and recovery actions are
+  implemented.
 - Design/UIUX is now a first-class workstream; its baseline and review method are
   in `docs/DESIGN.md`.
 
@@ -60,6 +61,8 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
   write and concurrent collisions.
 - [x] Release pipeline: clean Release bundle, metadata/localization/signature
   verification, ZIP+SHA256 packaging, CI workflow and release/security/support docs.
+- [x] Final local acceptance: huge MP4/MKV, in-flight bitmap/SVG cancel, graceful
+  quit, effects visual pass and 40 MP/SVG performance samples.
 - [x] D1–D8 design pass with local screenshot matrix, AX labels, keyboard-only
   Cmd+Return conversion and a recorded heuristic scorecard.
 - [x] Ad-hoc app build/signature; four `make check` PASS groups; doctor pass.
@@ -152,25 +155,30 @@ repository, domain/trademark, Developer ID, Intel/macOS 14 hardware.
   `Fixtures/SVGSecurity`; external URLs/scripts/entities remain rejected. Real
   renderer file/network denial is still not proven — lexical checks are not a
   general SVG sandbox; residual risk must stay documented.
-- [ ] **Cancel during actual conversions:** GUI cancel of FFmpeg is verified; add
-  targeted SVG/bitmap in-flight cancellation acceptance and verify checks between
-  decode/draw/encode stages.
-- [ ] **Output filesystem compatibility:** hard-link volume preflight is implemented
-  and rejects destinations whose volume does not report hard-link support. APFS
-  tests pass; real exFAT/FAT/network-volume acceptance is still pending because a
-  local disk image could not be mounted in this environment.
+- [x] **Cancel during actual conversions:** GUI cancel was exercised during a
+  40 MP bitmap encode and a 40 MP filtered SVG render; both reached Cancelled with
+  no published output, no temp directory and an unchanged source. Quit during an
+  FFmpeg conversion exited in ~0.5 s with no child/temp leak.
+- [ ] **Output filesystem compatibility:** hard-link volume preflight is
+  implemented and rejects destinations whose volume does not report hard-link
+  support. APFS tests pass; real exFAT/FAT/network-volume acceptance is blocked
+  because this environment cannot mount a local disk image. The exact remaining
+  action is to repeat the rejection test on a real exFAT/network volume.
 - [x] **User-friendly failures:** typed `ConversionErrorCode` values distinguish
   settings/input/missing-engine/no-audio/invalid-SVG/permission/disk-full/output
   verification cases; app-owned text is localized in four languages, engine
   stderr remains English detail, and failed items offer Retry plus Choose Output
   Folder for publication failures. Corrupt-container GUI acceptance completed.
-- [ ] **MP4/FFmpeg trust boundary and resource limits:** protocol whitelist and
-  explicit demuxers are in place; probe size/duration and timeouts are now bounded,
-  and corrupt MP4/MKV containers are covered. A real huge-file acceptance and
-  output-size cap decision remain.
-- [ ] **Real-file visual acceptance of effects:** synthetic fixtures cover renderer
-  behavior, but real SVGs with gradients/masks/filters/transparency still need a
-  visual pass. Sample files stay local and uncommitted.
+- [x] **MP4/FFmpeg trust boundary and resource limits:** protocol whitelist,
+  explicit demuxers, bounded probe size/duration and timeouts are in place; corrupt
+  containers are covered. A 1.29 GB MKV with three audio tracks and a 1.2 GB MP4
+  both converted to 1410.8 s / 192 kbps MP3 in ~11.5 s with source hash unchanged.
+  Output-size caps remain a documented residual policy decision rather than a
+  separate hard limit.
+- [x] **Real-file visual acceptance of effects:** a generated effects SVG
+  (gradient, blur, mask, clipPath, alpha, CJK text) and the real complex-path
+  “Airy Blue Sky” SVG were rendered and visually inspected. The effects sample is
+  local/uncommitted; broader real-user samples remain optional.
 
 ## P1 — Design, aesthetics and UI/UX
 
@@ -239,16 +247,19 @@ tasks are required for "complete the v0.1 experience", not optional polish.
   typed failure from permission/volume errors.
 - [x] Source TOCTOU and actual type verification: fresh size/mtime signature is
   rechecked before publication; engines probe/decode actual content.
-- [ ] Output filename limits: long names, NFC/NFD, case-insensitive volumes and
-  future non-APFS fallback.
+- [x] Output filename limits: very long Unicode names are converted with a
+  UTF-8-byte-bounded stem; checks assert the resulting filename stays ≤255 bytes.
+  Case-insensitive/NFC/NFD and non-APFS fallback remain future volume-specific work.
 - [x] Stronger production output verification: MP3 codec + duration, decoded
   image dimensions, and existing publication checks.
 - [x] Engine discovery and version readiness: `Tools.find` includes PATH;
   `scripts/doctor` checks bundled Helpers first and prints versions.
-- [ ] TCC-protected folders and persisted output paths: test
-  Desktop/Documents/Downloads access and stale/revoked output folders.
-- [ ] Engine resource limits and residual-risk documentation: memory/CPU caps for
-  rsvg/ffmpeg and an honest statement of the remaining trust boundary.
+- [ ] TCC-protected folders and persisted output paths: stale/revoked output
+  folders are handled and output paths are shown in full. Desktop/Downloads TCC
+  acceptance remains manual because it may prompt the user.
+- [ ] Engine resource limits and residual-risk documentation: timeouts and probe
+  bounds are implemented and the renderer trust boundary is documented, but
+  explicit memory/CPU rlimit caps for rsvg/ffmpeg remain unimplemented.
 
 ## P1 — Meaningful regression coverage
 
@@ -263,14 +274,16 @@ tasks are required for "complete the v0.1 experience", not optional polish.
   corrupt MP4/MKV, long filenames and non-ASCII/space-containing paths.
 - [ ] Test timeout, real conversion cancellation, denied write, engine missing,
   concurrent filename collisions, output disconnect and cleanup after failure.
-  Timeout, cancellation, denied write and concurrent collisions are automated;
-  engine-missing and output-disconnect need injected/manual fixtures.
-- [ ] Cover queue state transitions and termination; core tests still do not test
-  the UI model (GUI quit behavior is manually verified).
-- [ ] Put localization parity, plist/bundle/signature checks into repeatable
-  commands. These were run ad hoc during initial build.
-- [ ] Document remaining manual checks honestly; do not equate successful launch
-  with visual, keyboard, drag/drop or accessibility acceptance.
+  Timeout, in-flight cancellation, denied write, concurrent collisions and quit
+  termination are covered; engine-missing and output-disconnect need
+  injected/manual fixtures.
+- [ ] Cover queue state transitions and termination; GUI quit during conversion is
+  manually verified (~0.5 s, no temp/child leak), but core tests still do not
+  exercise the UI model.
+- [x] Put localization parity, plist/bundle/signature checks into repeatable
+  commands via `make verify` and `scripts/verify-release`.
+- [x] Document remaining manual checks honestly in `docs/TESTING.md` and
+  `docs/RELEASE.md`; build success is not treated as visual/VoiceOver acceptance.
 
 ## P2 — Public source and portable release
 

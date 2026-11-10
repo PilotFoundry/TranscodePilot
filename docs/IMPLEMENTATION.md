@@ -245,3 +245,22 @@ development verification aid, not an application dependency.
 - External blockers are recorded in `docs/RELEASE.md`: remote publish, Developer
   ID/notarization, Intel/macOS 14 hardware, clean-Mac test, portable engine builds
   and legal/distribution decisions.
+
+## Final local acceptance — 2026-11-10
+
+- Bitmap cancellation: 40 MP PNG encode cancelled in flight; status Cancelled, no
+  output, no temp dir, source hash unchanged.
+- SVG cancellation: 40 MP filtered/1500-shape SVG render cancelled in flight; same
+  cleanup result.
+- Quit during FFmpeg conversion: graceful quit in ~0.48 s; no FFmpeg child, temp
+  directory or published output remained.
+- Huge real MKV: 1.29 GB, three audio tracks, 23.5 min → 33.86 MB MP3, 1410.816 s,
+  192,006 bps in ~11.4 s; source hash unchanged.
+- Huge MP4: 1.2 GB remux with three audio tracks → same 1410.816 s / 192,006 bps in
+  ~11.5 s; source hash unchanged.
+- Effects visual pass: generated gradient/blur/mask/clip/alpha/CJK SVG and the real
+  complex-path cloud SVG rendered correctly.
+- Design D1 matrix and keyboard/AX pass recorded in `DESIGN.md`/`TESTING.md`.
+- Remaining external/manual items: real exFAT/network volume, TCC folder prompt,
+  live VoiceOver/focus-order, engine rlimit caps, hosted CI run, Developer ID,
+  Intel/macOS 14, clean-Mac, remote publication and legal/domain checks.

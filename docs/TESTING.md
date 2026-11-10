@@ -106,3 +106,20 @@ AX inspection exposes named rows and controls; Cmd+Return completed a keyboard-o
 conversion. Live VoiceOver, full focus-order and Reduce Motion checks remain
 manual. The heuristic scorecard is in `docs/DESIGN.md`; final sign-off is open only
 for that manual pass.
+
+## Final local acceptance record — 2026-11-10
+
+- `make check`: PASS (4 groups).
+- `make app`: PASS; ad-hoc codesign verified.
+- `make verify`: PASS; 93 localization keys × 4 tables; MKV document type present.
+- `make release` / `make package`: PASS; `.build/release/TranscodePilot-0.1.0-arm64.zip`
+  plus SHA256 re-verified from an extracted copy.
+- In-flight cancel: 40 MP bitmap and 40 MP filtered SVG both reached Cancelled with
+  no output/temp/source change.
+- Quit during conversion: graceful quit ~0.48 s; no FFmpeg child, temp or output.
+- Huge media: 1.29 GB MKV and 1.2 GB MP4 both produced 1410.816 s MP3 at
+  192,006 bps in ~11.5 s; sources unchanged; personal outputs deleted.
+- Effects visual pass: generated effects SVG and real cloud SVG rendered correctly.
+- Explicitly not accepted here: live VoiceOver/focus order, TCC folder prompts,
+  real exFAT/network volume, engine rlimit caps, Intel/macOS 14, clean-Mac,
+  notarization, remote publication and legal clearance.

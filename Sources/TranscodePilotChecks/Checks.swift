@@ -155,6 +155,11 @@ func checkRegressionExtras(in folder: URL, svg: URL, ffmpeg: URL, probe: URL) as
     try FileManager.default.copyItem(at: svg, to: longSource)
     let longOutput = try await Converter.convert(longSource, to: folder, options: options)
     try expect(FileManager.default.fileExists(atPath: longOutput.path), "long source filename converts")
+    let veryLong = folder.appendingPathComponent(String(repeating: "长", count: 80) + ".svg")
+    try FileManager.default.copyItem(at: svg, to: veryLong)
+    let veryLongOutput = try await Converter.convert(veryLong, to: folder, options: options)
+    try expect(FileManager.default.fileExists(atPath: veryLongOutput.path), "very long source filename converts")
+    try expect(veryLongOutput.lastPathComponent.utf8.count <= 255, "output filename stays within filesystem limits")
 
     // Multiple audio tracks: the app must still publish the first audio stream.
     let multi = folder.appendingPathComponent("multi-audio.mkv")

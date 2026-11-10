@@ -91,3 +91,4 @@
 "file" = "ファイル";
 "Pending" = "待機中";
 "Output preview" = "出力プレビュー";
+"Output file is no longer available." = "出力ファイルは既に存在しません。";

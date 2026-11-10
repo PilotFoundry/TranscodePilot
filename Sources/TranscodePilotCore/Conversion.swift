@@ -183,7 +183,7 @@ public enum Converter {
             try Task.checkCancellation()
         }
         try Task.checkCancellation()
-        let stem = input.deletingPathExtension().lastPathComponent
+        let stem = limitedStem(input.deletingPathExtension().lastPathComponent)
         for index in 0..<10000 {
             let suffix = index == 0 ? "" : "-\(index)"
             let target = directory.appendingPathComponent("\(stem)\(suffix).\(options.format.rawValue)")
@@ -195,6 +195,16 @@ public enum Converter {
             if errno != EEXIST { throw ConversionError.code(.outputNotWritable, detail: "Cannot save output: \(String(cString: strerror(errno)))") }
         }
         throw ConversionError.code(.outputNotWritable, detail: "Too many files with the same output name.")
+    }
+
+    private static func limitedStem(_ stem: String, maxBytes: Int = 200) -> String {
+        var result = ""
+        for character in stem {
+            let next = result + String(character)
+            if next.utf8.count > maxBytes { break }
+            result = next
+        }
+        return result.isEmpty ? "output" : result
     }
 
     private static func requireCapacity(in directory: URL, bytes: Int64) throws {

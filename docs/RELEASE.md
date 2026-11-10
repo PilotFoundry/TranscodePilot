@@ -49,6 +49,8 @@ bundle cleanliness, ad-hoc signature and architecture.
 - `make app`: PASS; ad-hoc signature verified.
 - `make verify`: PASS; 93 localization keys × 4 tables; MKV document type present.
 - `make release` / `make package`: PASS; ZIP + SHA256 generated and re-verified.
-- GUI: MKV, real MKV, SVG sizing, corrupt failure/recovery, close-alert sheet,
-  Cmd+Return keyboard flow and D1 screenshot matrix were exercised locally.
-- Open manual gate: live VoiceOver/focus-order and clean-Mac/14/Intel checks.
+- GUI: MKV, real 1.29 GB MKV, real 1.2 GB MP4, SVG sizing, huge-file MP3, effects
+  visual pass, in-flight bitmap/SVG cancel, corrupt failure/recovery, close-alert
+  sheet, Cmd+Return keyboard flow and D1 screenshot matrix were exercised locally.
+- Open manual gate: live VoiceOver/focus order, TCC folder prompts, real
+  exFAT/network volume, engine rlimit caps, clean-Mac/14/Intel and notarization.

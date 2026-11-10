@@ -238,9 +238,15 @@ struct MainView: View {
     }
 
     @ViewBuilder func resultCard(_ item: ConversionItem, _ output: URL) -> some View {
+        let exists = FileManager.default.fileExists(atPath: output.path)
         VStack(alignment: .leading, spacing: Design.Spacing.sm) {
-            Label(L("Exported"), systemImage: "checkmark.circle.fill").font(.callout.weight(.medium))
-            if item.options.format != .mp3, let image = ThumbnailLoader.load(output, maxPixelSize: 512) {
+            if exists {
+                Label(L("Exported"), systemImage: "checkmark.circle.fill").font(.callout.weight(.medium))
+            } else {
+                Label(L("Output file is no longer available."), systemImage: "exclamationmark.triangle")
+                    .font(.callout.weight(.medium)).foregroundStyle(.orange)
+            }
+            if exists, item.options.format != .mp3, let image = ThumbnailLoader.load(output, maxPixelSize: 512) {
                 ZStack {
                     PreviewCheckerboard()
                     Image(nsImage: image).resizable().scaledToFit().padding(8)
@@ -250,20 +256,23 @@ struct MainView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.secondary.opacity(0.2)))
             }
-            Text(output.lastPathComponent).font(.caption.monospaced()).textSelection(.enabled)
-            if let source = CGImageSourceCreateWithURL(output as CFURL, nil),
+            Text(output.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))
+                .font(.caption.monospaced()).textSelection(.enabled).lineLimit(2)
+            if exists, let source = CGImageSourceCreateWithURL(output as CFURL, nil),
                let info = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
                let width = info[kCGImagePropertyPixelWidth] as? Int,
                let height = info[kCGImagePropertyPixelHeight] as? Int {
                 Text("\(width) × \(height) px").font(.caption.monospaced()).foregroundStyle(.secondary)
             }
-            if let size = (try? FileManager.default.attributesOfItem(atPath: output.path))?[.size] as? NSNumber {
+            if exists, let size = (try? FileManager.default.attributesOfItem(atPath: output.path))?[.size] as? NSNumber {
                 Text(ByteCountFormatter.string(fromByteCount: size.int64Value, countStyle: .file))
                     .font(.caption.monospaced()).foregroundStyle(.secondary)
             }
             HStack {
-                Button(L("Show in Finder")) { NSWorkspace.shared.activateFileViewerSelecting([output]) }
-                Button(L("Open")) { NSWorkspace.shared.open(output) }
+                if exists {
+                    Button(L("Show in Finder")) { NSWorkspace.shared.activateFileViewerSelecting([output]) }
+                    Button(L("Open")) { NSWorkspace.shared.open(output) }
+                }
                 Button(L("Convert again")) { model.reconvertSelected() }
             }
         }
