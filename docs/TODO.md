@@ -55,8 +55,14 @@ headless refs/clicks; Accessibility and Screen Recording granted by the user):
   disabled, so ⌘Q did nothing. After targeting NSApp and moving the termination
   wait to main-queue scheduling, ⌘Q during conversion exits in about 0.4 s with
   no child or temporary-file leaks.
-- Not yet covered: SVG/bitmap in-flight cancellation, real user files,
-  VoiceOver/light-dark, and exFAT/network volumes.
+- Real-file pass: the user's 2700×1030 CJK swimlane SVG rendered correctly at
+  1× (2700×1030) and 2× (5400×2060); all CJK labels and connector lines were
+  visually present. The supplied iShot MP4 contains only an h264 video stream, so
+  the app correctly failed with “This video has no audio track.” and produced no
+  MP3.
+- Not yet covered: more real SVGs (gradients/masks/filters/alpha), an MP4 with an
+  audio track, SVG/bitmap in-flight cancellation, VoiceOver/light-dark, and
+  exFAT/network volumes.
 
 ## P0 — Reliable daily use
 
@@ -100,7 +106,10 @@ headless refs/clicks; Accessibility and Screen Recording granted by the user):
   Keep APFS atomic publication and collision safety.
 - [ ] **Real-file acceptance:** collect non-sensitive representative SVGs and MP4s;
   compare gradients, masks, filters, CJK typography, alpha edges and audio duration.
-  Waiting for user-provided local samples; do not commit personal fixtures.
+  Partial 2026-11-10: the user's CJK swimlane SVG rendered correctly at 1× and 2×;
+  the supplied MP4 has no audio and was correctly rejected. Still need real SVGs
+  with gradients/masks/filters/alpha and an MP4 with an audio track. Samples stay
+  local and are not committed.
 - [ ] **User-friendly failures:** localize app-owned errors, distinguish missing
   engine/no audio/invalid SVG/permission/disk-full cases, and offer a recovery action.
 

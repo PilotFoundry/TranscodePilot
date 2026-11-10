@@ -101,6 +101,11 @@ development verification aid, not an application dependency.
   `.transcodepilot-*` directory, no partial MP3.
 - Quit during conversion after the fix: ⌘Q exits in ~0.4 s, child process gone,
   temporary directory gone, no partial output.
-- Remaining manual acceptance: SVG/bitmap in-flight cancellation, real user
-  SVG/MP4 samples, VoiceOver/light-dark, exFAT/network destinations, Intel and
-  macOS 14.
+- Real user SVG (2700×1030 CJK swimlane): rendered correctly at 1× (2700×1030)
+  and 2× (5400×2060); nodes, CJK labels and connector lines were visually present.
+- Real user MP4 (iShot screen recording): ffprobe reports only an h264 video
+  stream and no audio; the app correctly reports “This video has no audio track.”
+  and produces no output.
+- Remaining manual acceptance: real SVGs with gradients/masks/filters/alpha, a real
+  MP4 with an audio track, SVG/bitmap in-flight cancellation, VoiceOver/light-dark,
+  exFAT/network destinations, Intel and macOS 14.
