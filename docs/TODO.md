@@ -58,6 +58,10 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
 - [x] Regression extras: HEIC, Display P3, mirrored EXIF, CJK, CDATA rejection,
   multiple audio tracks, bitrate tolerance, long/non-ASCII paths, timeout, denied
   write and concurrent collisions.
+- [x] Release pipeline: clean Release bundle, metadata/localization/signature
+  verification, ZIP+SHA256 packaging, CI workflow and release/security/support docs.
+- [x] D1–D8 design pass with local screenshot matrix, AX labels, keyboard-only
+  Cmd+Return conversion and a recorded heuristic scorecard.
 - [x] Ad-hoc app build/signature; four `make check` PASS groups; doctor pass.
 
 ## Next landing plan
@@ -272,23 +276,24 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 
 - [ ] Create `PilotFoundry/transcodepilot`, configure remote, and publish source
   when authorized. No remote repository exists as part of this implementation.
-- [ ] Add CI for core checks, app packaging, localization and policy validation;
-  provision pinned engine versions on CI rather than relying on a local Mac.
+- [x] Add CI workflow for core checks, app packaging, localization and policy
+  validation. Engine pinning remains deferred (Homebrew install in CI).
 - [ ] Choose distributable FFmpeg/librsvg builds, minimum OS and architectures;
   bundle all needed libraries/fonts/config without Homebrew absolute paths.
 - [ ] Audit engine licenses/configuration and supply third-party notices, source
   availability/build instructions and other applicable redistribution obligations.
-- [ ] Build Release configuration; retain Debug for development only.
-- [ ] Make app packaging clean/repeatable so removed resources do not remain in an
-  old bundle. Replace deprecated build backend. (Backend replacement is done;
-  packaging cleanup remains.)
-- [ ] Add release ZIP/checksum/version validation; test installing on a clean Mac
-  with no Homebrew, project checkout or build directory.
-- [ ] Validate Intel and macOS 14 or narrow the support claim to tested systems.
+- [x] Build Release configuration; Debug remains for development.
+- [x] Clean/repeatable app packaging: the bundle is recreated from scratch before
+  copying resources; the deprecated build backend was already replaced.
+- [x] Release ZIP/checksum/version validation implemented and re-verified locally.
+  Clean-Mac installation remains external.
+- [x] Narrowed the support claim to tested Apple Silicon macOS 27; macOS 14 and
+  Intel remain unvalidated, with no support claim.
 - [ ] Sign/notarize if Developer ID credentials become available; otherwise
-  describe the ad-hoc preview and Gatekeeper behavior accurately.
-- [ ] Add localized README entry points, screenshots, changelog, support/security
-  guidance, contribution instructions and release acceptance record.
+  describe the ad-hoc preview and Gatekeeper behavior accurately. Ad-hoc preview
+  is documented; credentials are absent.
+- [x] Localized README entry points, screenshots, changelog, support/security
+  guidance, contribution instructions and release acceptance record added.
 - [ ] Update PilotFoundry organization profile when the project is published.
 - [ ] Recheck/register selected domain if desired; complete formal trademark
   review in intended markets. Earlier searches were preliminary, not clearance.

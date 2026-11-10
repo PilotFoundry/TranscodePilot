@@ -4,16 +4,19 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 SWIFT=${SWIFT:-swift}
 SWIFT_FLAGS=${SWIFT_FLAGS:-}
+BUILD_CONFIG=${BUILD_CONFIG:-debug}
 # SWIFT_FLAGS is intentionally split into words so callers can pass several flags.
 # shellcheck disable=SC2086
-"$SWIFT" build $SWIFT_FLAGS --product TranscodePilot
+"$SWIFT" build $SWIFT_FLAGS -c "$BUILD_CONFIG" --product TranscodePilot
 # shellcheck disable=SC2086
-BIN=$("$SWIFT" build $SWIFT_FLAGS --show-bin-path)
+BIN=$("$SWIFT" build $SWIFT_FLAGS -c "$BUILD_CONFIG" --show-bin-path)
 APP="$ROOT/.build/TranscodePilot.app"
+# Recreate the bundle so removed resources cannot survive from a previous build.
+rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/TranscodePilot" "$APP/Contents/MacOS/TranscodePilot"
 cp "$ROOT/Info.plist" "$APP/Contents/Info.plist"
 ditto "$ROOT/Sources/TranscodePilot/Resources" "$APP/Contents/Resources"
 codesign --force --sign - "$APP"
 codesign --verify --strict "$APP"
-printf '%s\n' "$APP"
+printf '%s (%s)\n' "$APP" "$BUILD_CONFIG"

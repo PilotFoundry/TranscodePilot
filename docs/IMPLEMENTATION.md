@@ -230,3 +230,18 @@ development verification aid, not an application dependency.
 - Remaining manual-only coverage is documented: real camera HEIC/ICC files,
   engine-missing/output-disconnect injection, UI queue state-machine tests and
   the four-language screenshots/VoiceOver pass.
+
+## Release engineering — 2026-11-10
+
+- `make release` builds a clean Release bundle; `make package` calls
+  `scripts/verify-release` and writes a ZIP plus SHA256 under `.build/release/`.
+- `scripts/verify-release` checks plist metadata, MKV document registration, four
+  localization tables, bundle junk files, ad-hoc signature and architecture.
+- `.github/workflows/ci.yml` runs checks, app build, metadata verification, release
+  build and packaging; it is not yet executed on a hosted runner and installs
+  unpinned Homebrew engines.
+- Added localized README entry points, clean screenshots, changelog, release,
+  contribution, security and support documents.
+- External blockers are recorded in `docs/RELEASE.md`: remote publish, Developer
+  ID/notarization, Intel/macOS 14 hardware, clean-Mac test, portable engine builds
+  and legal/distribution decisions.

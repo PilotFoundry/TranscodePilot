@@ -1,0 +1,40 @@
+#!/bin/sh
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+APP=${1:-"$ROOT/.build/TranscodePilot.app"}
+[ -d "$APP" ] || { printf 'app bundle missing: %s\n' "$APP" >&2; exit 1; }
+plutil -lint "$APP/Contents/Info.plist" >/dev/null
+BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist")
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")
+MIN_OS=$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Contents/Info.plist")
+[ "$BUNDLE_ID" = "io.github.PilotFoundry.TranscodePilot" ] || { printf 'unexpected bundle id: %s\n' "$BUNDLE_ID" >&2; exit 1; }
+[ -n "$VERSION" ] || { printf 'missing version\n' >&2; exit 1; }
+[ -x "$APP/Contents/MacOS/TranscodePilot" ] || { printf 'missing executable\n' >&2; exit 1; }
+[ -f "$APP/Contents/Resources/AppIcon.icns" ] || { printf 'missing AppIcon.icns\n' >&2; exit 1; }
+for lang in en zh-Hans zh-Hant ja; do
+    [ -f "$APP/Contents/Resources/$lang.lproj/Localizable.strings" ] || {
+        printf 'missing localization: %s\n' "$lang" >&2; exit 1
+    }
+done
+if find "$APP" -name '.DS_Store' -o -name '*.swp' | grep -q .; then
+    printf 'bundle contains editor/OS junk files\n' >&2; exit 1
+fi
+EXTENSIONS=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDocumentTypes:0:CFBundleTypeExtensions' "$APP/Contents/Info.plist")
+printf '%s\n' "$EXTENSIONS" | grep -qw mkv || { printf 'MKV document type missing\n' >&2; exit 1; }
+PYTHONPATH= python3 - "$APP" <<'PY'
+import re, sys, pathlib
+app = pathlib.Path(sys.argv[1])
+tables = {}
+for path in app.glob("Contents/Resources/*.lproj/Localizable.strings"):
+    tables[path.parent.name] = set(re.findall(r'^"((?:[^"\\]|\\.)*)"\s*=', path.read_text(), re.M))
+if len(tables) != 4:
+    raise SystemExit("expected four localization tables")
+union = set().union(*tables.values())
+for name, keys in tables.items():
+    if keys != union:
+        raise SystemExit(f"localization mismatch: {name}")
+print(f"localization OK: {len(union)} keys x {len(tables)} tables")
+PY
+codesign --verify --strict "$APP"
+ARCH=$(lipo -archs "$APP/Contents/MacOS/TranscodePilot")
+printf 'verified: %s %s (min macOS %s, %s, ad-hoc)\n' "$BUNDLE_ID" "$VERSION" "$MIN_OS" "$ARCH"

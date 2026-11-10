@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+APP=${1:-"$ROOT/.build/TranscodePilot.app"}
+"$ROOT/scripts/verify-release" "$APP"
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")
+ARCH=$(lipo -archs "$APP/Contents/MacOS/TranscodePilot" | tr ' ' '-')
+DEST="$ROOT/.build/release"
+mkdir -p "$DEST"
+ZIP="$DEST/TranscodePilot-$VERSION-$ARCH.zip"
+CHECKSUM="$ZIP.sha256"
+rm -f "$ZIP" "$CHECKSUM"
+ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+( cd "$DEST" && shasum -a 256 "$(basename "$ZIP")" > "$(basename "$CHECKSUM")" )
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
+ditto -x -k "$ZIP" "$TMP"
+"$ROOT/scripts/verify-release" "$TMP/TranscodePilot.app" >/dev/null
+printf 'packaged: %s\nchecksum: %s\n' "$ZIP" "$CHECKSUM"

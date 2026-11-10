@@ -35,7 +35,10 @@ used for the 2026-11-06 verification), SwiftPM's internal sandbox cannot be
 applied; run `make check SWIFT_FLAGS=--disable-sandbox` there. The flag is not
 needed in a normal developer terminal.
 
-`make app` builds and verifies the local ad-hoc signed bundle. `make doctor`
+`make verify` checks the bundle plist, document types, four localization tables,
+bundle cleanliness, signature and architecture. `make release`/`make package`
+build a clean Release app and write a ZIP + SHA256 under `.build/release/`;
+`make doctor`
 checks conversion tool locations. The app requires no Automation, Accessibility,
 Screen Recording or Full Disk Access permission.
 

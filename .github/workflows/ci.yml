@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-verify:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install conversion engines
+        run: brew install ffmpeg librsvg
+      - name: Show engine versions
+        run: make doctor
+      - name: Build and run checks
+        run: make check
+      - name: Build app bundle
+        run: make app
+      - name: Verify metadata and localization
+        run: make verify
+      - name: Build release configuration
+        run: make release
+      - name: Package ad-hoc preview
+        run: make package
+      - name: Upload preview package
+        uses: actions/upload-artifact@v4
+        with:
+          name: transcodepilot-preview
+          path: |
+            .build/TranscodePilot.app
+            .build/release/*.zip
+            .build/release/*.sha256

@@ -3,6 +3,12 @@
 Local image and audio conversion for macOS, by **PilotFoundry**.
 Version **0.1.0 — development preview**. Independent of SwitchPilot.
 
+[简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md)
+
+![Empty state](docs/images/light-empty.png)
+
+![Populated state](docs/images/light-valid.png)
+
 ## Supported conversions
 
 - Static, self-contained SVG → PNG / JPEG, rendered at the requested pixel size.
@@ -14,8 +20,10 @@ Version **0.1.0 — development preview**. Independent of SwitchPilot.
 
 ## Build and run
 
-Requires macOS 14+, Swift 6 and Apple Command Line Tools or Xcode.
-This development build requires local conversion tools:
+Requires macOS 14+, Swift 6 and Apple Command Line Tools or Xcode. The current
+development preview has only been exercised on Apple Silicon macOS 27; macOS 14 and
+Intel are not yet validated and are not support claims. This build requires local
+conversion tools:
 
 ```sh
 brew install ffmpeg librsvg
@@ -24,9 +32,10 @@ make check
 make run
 ```
 
-The build is `.build/TranscodePilot.app`, ad-hoc signed, not notarized.
-Build on each target architecture; only Apple Silicon has been exercised here.
-No public standalone release is provided. Engine binaries are not bundled.
+The build is `.build/TranscodePilot.app`, ad-hoc signed, not notarized. A local
+preview package can be produced with `make package`
+(`.build/release/TranscodePilot-<version>-<arch>.zip` plus SHA256). No public
+standalone release is provided; engine binaries are not bundled.
 
 Drop files, select an output format, choose a folder, then Convert (⌘↩).
 ⌘O adds files. Width 0 uses 1×/2×/4×; otherwise width is in actual pixels.
@@ -67,7 +76,9 @@ then quits; the window cannot be closed while a conversion is running.
 - App-owned errors are localized with recovery actions (retry / choose another output folder); engine details may remain in English.
 
 See [product principles](docs/CORE.md), [design direction](docs/DESIGN.md),
-[checks](docs/TESTING.md), and [implementation checklist](docs/IMPLEMENTATION.md).
+[checks](docs/TESTING.md), [implementation checklist](docs/IMPLEMENTATION.md),
+[release engineering](docs/RELEASE.md), [changelog](CHANGELOG.md),
+[contributing](CONTRIBUTING.md), [security](SECURITY.md) and [support](SUPPORT.md).
 
 ## Engines and licensing
 
