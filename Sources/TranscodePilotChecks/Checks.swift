@@ -15,6 +15,99 @@ func pixels(_ url: URL) throws -> CGImage {
     return image
 }
 
+func rgba(_ image: CGImage, x: Int, y: Int) throws -> (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
+    let bitmap = NSBitmapImageRep(cgImage: image)
+    guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else {
+        throw ConversionError.message("Cannot sample output pixel at \(x),\(y).")
+    }
+    return (color.redComponent, color.greenComponent, color.blueComponent, color.alphaComponent)
+}
+
+func near(_ value: CGFloat, _ target: CGFloat, _ tolerance: CGFloat) -> Bool {
+    abs(value - target) <= tolerance
+}
+
+func between(_ value: CGFloat, _ low: CGFloat, _ high: CGFloat) -> Bool {
+    value >= low && value <= high
+}
+
+func fixtureURL(_ relativePath: String) throws -> URL {
+    guard let root = Bundle.module.resourceURL else {
+        throw ConversionError.message("Missing test fixture bundle.")
+    }
+    let url = root.appendingPathComponent(relativePath)
+    guard FileManager.default.fileExists(atPath: url.path) else {
+        throw ConversionError.message("Missing fixture: \(relativePath)")
+    }
+    return url
+}
+
+func convertFixture(_ name: String, width: Int, format: OutputFormat, in folder: URL) async throws -> CGImage {
+    let url = try fixtureURL("Fixtures/SVGEffects/\(name)")
+    var options = ConversionOptions()
+    options.format = format
+    options.width = width
+    let output = try await Converter.convert(url, to: folder, options: options)
+    return try pixels(output)
+}
+
+/// Shared regression corpus for SVG gradients, filters, masks, clipping and
+/// transparency. These run on every `make check` and are intentionally kept
+/// separate from user-provided fixtures.
+func checkSVGEffects(in folder: URL) async throws {
+    let linear = try await convertFixture("linear-gradient.svg", width: 200, format: .png, in: folder)
+    try expect(linear.width == 200 && linear.height == 100, "linear gradient dimensions")
+    let left = try rgba(linear, x: 10, y: 50)
+    try expect(left.r > 0.7 && left.b < 0.3 && left.a > 0.9, "linear gradient left stop")
+    let middle = try rgba(linear, x: 50, y: 50)
+    try expect(between(middle.r, 0.2, 0.8) && between(middle.b, 0.2, 0.8), "linear gradient middle blend")
+    let outside = try rgba(linear, x: 150, y: 50)
+    try expect(outside.a < 0.05, "linear gradient transparent outside its rect")
+
+    let radial = try await convertFixture("radial-gradient.svg", width: 200, format: .png, in: folder)
+    try expect(radial.width == 200 && radial.height == 200, "radial gradient dimensions")
+    let center = try rgba(radial, x: 100, y: 100)
+    try expect(center.r > 0.9 && center.g > 0.9 && center.b > 0.9 && center.a > 0.9, "radial gradient white center")
+    let radialCorner = try rgba(radial, x: 10, y: 10)
+    try expect(radialCorner.a < 0.05, "radial gradient transparent corner")
+
+    let blur = try await convertFixture("blur-filter.svg", width: 200, format: .png, in: folder)
+    let blurCenter = try rgba(blur, x: 100, y: 100)
+    try expect(blurCenter.a > 0.8 && blurCenter.r > 0.5 && blurCenter.g < 0.5, "Gaussian blur center")
+    let blurBleed = try rgba(blur, x: 60, y: 100)
+    try expect(blurBleed.a > 0.01 && blurBleed.a < 0.99, "Gaussian blur bleeds outside the rect")
+    let blurCorner = try rgba(blur, x: 10, y: 10)
+    try expect(blurCorner.a < 0.05, "Gaussian blur leaves a transparent corner")
+
+    let matrix = try await convertFixture("color-matrix-filter.svg", width: 200, format: .png, in: folder)
+    let matrixCenter = try rgba(matrix, x: 100, y: 50)
+    try expect(matrixCenter.r < 0.2 && matrixCenter.g > 0.7 && matrixCenter.b < 0.2 && matrixCenter.a > 0.8, "feColorMatrix red to green")
+
+    let mask = try await convertFixture("mask.svg", width: 200, format: .png, in: folder)
+    let maskLeft = try rgba(mask, x: 30, y: 50)
+    let maskRight = try rgba(mask, x: 150, y: 50)
+    try expect(maskLeft.a < 0.05, "mask hides the left half")
+    try expect(maskRight.b > 0.7 && maskRight.a > 0.8, "mask keeps the right half")
+
+    let clip = try await convertFixture("clip-path.svg", width: 200, format: .png, in: folder)
+    let clipCorner = try rgba(clip, x: 10, y: 10)
+    let clipCenter = try rgba(clip, x: 100, y: 100)
+    try expect(clipCorner.a < 0.05, "clip-path transparent corner")
+    try expect(clipCenter.r > 0.8 && clipCenter.g > 0.4 && clipCenter.b < 0.2 && clipCenter.a > 0.8, "clip-path orange center")
+
+    let transparent = try await convertFixture("transparency.svg", width: 200, format: .png, in: folder)
+    let transparentCorner = try rgba(transparent, x: 10, y: 10)
+    let redHalf = try rgba(transparent, x: 40, y: 50)
+    let overlap = try rgba(transparent, x: 90, y: 50)
+    try expect(transparentCorner.a < 0.05, "transparent PNG corner")
+    try expect(between(redHalf.a, 0.2, 0.8), "transparent PNG half-opacity red")
+    try expect(overlap.a > 0.6, "transparent PNG overlap accumulates alpha")
+
+    let flattened = try await convertFixture("transparency.svg", width: 200, format: .jpg, in: folder)
+    let flattenedCorner = try rgba(flattened, x: 10, y: 10)
+    try expect(flattenedCorner.r > 0.95 && flattenedCorner.g > 0.95 && flattenedCorner.b > 0.95, "transparent JPEG flattens onto white")
+}
+
 @main struct Checks {
     static func main() async {
         do {
@@ -153,6 +246,7 @@ func pixels(_ url: URL) throws -> CGImage {
             catch is CancellationError { cancelledBeforePublishing = true }
             catch { throw error }
             try expect(cancelledBeforePublishing, "cancelled conversion stops before publishing")
+            try await checkSVGEffects(in: folder)
 
             guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else { throw ConversionError.message("FFmpeg required for checks") }
             let video = folder.appendingPathComponent("sample.mp4")
@@ -180,6 +274,7 @@ func pixels(_ url: URL) throws -> CGImage {
             print("PASS: MP4 → MP3, missing audio, child process cancellation and temporary cleanup")
             print("PASS: SVG pixels, transparency, JPEG background, bitmap resize, collision safety, source preservation and unsafe input")
             print("PASS: input bounds, symlink source, cancelled conversion, planner estimates and preference sanitizing")
+            print("PASS: SVG effects fixtures (gradient, blur, color matrix, mask, clip-path, transparency)")
         } catch {
             fputs("\(error.localizedDescription)\n", stderr)
             exit(1)

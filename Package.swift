@@ -9,7 +9,8 @@ let package = Package(
     targets: [
         .target(name: "TranscodePilotCore"),
         .executableTarget(name: "TranscodePilot", dependencies: ["TranscodePilotCore"], resources: [.copy("Resources")]),
-        .executableTarget(name: "TranscodePilotChecks", dependencies: ["TranscodePilotCore"])
+        .executableTarget(name: "TranscodePilotChecks", dependencies: ["TranscodePilotCore"],
+                          resources: [.copy("Fixtures")])
     ],
     swiftLanguageModes: [.v5]
 )
