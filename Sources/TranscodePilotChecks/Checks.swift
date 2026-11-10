@@ -108,6 +108,58 @@ func checkSVGEffects(in folder: URL) async throws {
     try expect(flattenedCorner.r > 0.95 && flattenedCorner.g > 0.95 && flattenedCorner.b > 0.95, "transparent JPEG flattens onto white")
 }
 
+func convertSizingFixture(_ name: String, width: Int = 0, scale: Double = 1, in folder: URL) async throws -> CGImage {
+    let url = try fixtureURL("Fixtures/SVGSizing/\(name)")
+    var options = ConversionOptions()
+    options.format = .png
+    options.width = width
+    options.scale = scale
+    let output = try await Converter.convert(url, to: folder, options: options)
+    return try pixels(output)
+}
+
+func checkSVGSizing(in folder: URL) async throws {
+    let units = try await convertSizingFixture("units-mm.svg", scale: 1, in: folder)
+    try expect(units.width == 96 && units.height == 48, "physical units resolve at 96 dpi")
+
+    let viewBoxOnly = try await convertSizingFixture("viewbox-only.svg", scale: 2, in: folder)
+    try expect(viewBoxOnly.width == 200 && viewBoxOnly.height == 100, "viewBox-only SVG scales via zoom")
+
+    let percentage = try await convertSizingFixture("percentage.svg", scale: 2, in: folder)
+    try expect(percentage.width == 200 && percentage.height == 100, "percentage dimensions resolve against viewBox")
+
+    let oneDimension = try await convertSizingFixture("one-dimension.svg", scale: 1, in: folder)
+    try expect(oneDimension.width == 200 && oneDimension.height == 100, "missing SVG dimension derives from viewBox aspect")
+
+    let fractional = try await convertSizingFixture("fractional.svg", width: 201, in: folder)
+    try expect(fractional.width == 201, "explicit requested SVG width stays exact")
+    try expect(fractional.height == 101, "fractional SVG height follows the intrinsic ratio")
+
+    let explicitUnits = try await convertSizingFixture("units-mm.svg", width: 200, in: folder)
+    try expect(explicitUnits.width == 200 && explicitUnits.height == 100, "explicit width uses the physical-unit aspect ratio")
+
+    let unitsURL = try fixtureURL("Fixtures/SVGSizing/units-mm.svg")
+    let metadata = try SourceInspector.inspect(unitsURL)
+    var estimateOptions = ConversionOptions()
+    estimateOptions.scale = 1
+    let estimate = try ConversionPlanner.estimate(metadata, options: estimateOptions)
+    try expect(estimate == ConversionEstimate(width: 96, height: 48), "planner agrees with physical-unit intrinsic size")
+
+    for (fixture, reason) in [
+        ("unsupported-percent.svg", "percentage"),
+        ("no-dimensions.svg", "positive")
+    ] {
+        let url = try fixtureURL("Fixtures/SVGSizing/\(fixture)")
+        var rejected = false
+        do { _ = try await Converter.convert(url, to: folder, options: ConversionOptions()) }
+        catch {
+            rejected = true
+            try expect(error.localizedDescription.contains(reason), "\(fixture) reports the expected reason")
+        }
+        try expect(rejected, "\(fixture) is rejected")
+    }
+}
+
 @main struct Checks {
     static func main() async {
         do {
@@ -247,6 +299,7 @@ func checkSVGEffects(in folder: URL) async throws {
             catch { throw error }
             try expect(cancelledBeforePublishing, "cancelled conversion stops before publishing")
             try await checkSVGEffects(in: folder)
+            try await checkSVGSizing(in: folder)
 
             guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else { throw ConversionError.message("FFmpeg required for checks") }
             let video = folder.appendingPathComponent("sample.mp4")
@@ -258,6 +311,14 @@ func checkSVGEffects(in folder: URL) async throws {
             try expect(String(decoding: audioInfo, as: UTF8.self).contains("mp3"), "MP4 audio encoded as MP3")
             let silent = folder.appendingPathComponent("silent.mp4")
             _ = try await ProcessRunner.run(ffmpeg, ["-v", "error", "-i", video.path, "-an", "-c:v", "copy", silent.path])
+            let mkv = folder.appendingPathComponent("sample.mkv")
+            _ = try await ProcessRunner.run(ffmpeg, ["-v", "error", "-i", video.path, "-c", "copy", mkv.path])
+            try expect(Converter.formats(for: mkv) == [.mp3], "MKV exposes MP3 output")
+            options = ConversionOptions()
+            options.format = .mp3
+            let mkvMp3 = try await Converter.convert(mkv, to: folder, options: options)
+            let mkvAudioInfo = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "stream=codec_name", "-of", "csv=p=0", mkvMp3.path])
+            try expect(String(decoding: mkvAudioInfo, as: UTF8.self).contains("mp3"), "MKV audio encoded as MP3")
             rejected = false
             do { _ = try await Converter.convert(silent, to: folder, options: options) }
             catch { rejected = true }
@@ -271,10 +332,10 @@ func checkSVGEffects(in folder: URL) async throws {
             try expect(Date().timeIntervalSince(cancellationStart) < 3, "child process cancellation is prompt")
             let remaining = try FileManager.default.contentsOfDirectory(atPath: folder.path)
             try expect(!remaining.contains(where: { $0.hasPrefix(".transcodepilot-") }), "temporary outputs cleaned up")
-            print("PASS: MP4 → MP3, missing audio, child process cancellation and temporary cleanup")
+            print("PASS: MP4/MKV → MP3, missing audio, child process cancellation and temporary cleanup")
             print("PASS: SVG pixels, transparency, JPEG background, bitmap resize, collision safety, source preservation and unsafe input")
             print("PASS: input bounds, symlink source, cancelled conversion, planner estimates and preference sanitizing")
-            print("PASS: SVG effects fixtures (gradient, blur, color matrix, mask, clip-path, transparency)")
+            print("PASS: SVG effects fixtures (gradient, blur, color matrix, mask, clip-path, transparency) and sizing rules")
         } catch {
             fputs("\(error.localizedDescription)\n", stderr)
             exit(1)

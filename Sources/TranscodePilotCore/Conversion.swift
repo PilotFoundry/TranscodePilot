@@ -36,7 +36,7 @@ public enum Converter {
     public static func formats(for input: URL) -> [OutputFormat] {
         switch input.pathExtension.lowercased() {
         case "svg", "png", "jpg", "jpeg", "heic": return [.png, .jpg]
-        case "mp4": return [.mp3]
+        case "mp4", "mkv": return [.mp3]
         default: return []
         }
     }
@@ -61,9 +61,12 @@ public enum Converter {
             guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else {
                 throw ConversionError.message("Install FFmpeg: brew install ffmpeg")
             }
-            let info = try await ProcessRunner.run(probe, ["-v", "error", "-protocol_whitelist", "file,pipe", "-f", "mov", "-select_streams", "a:0", "-show_entries", "stream=index", "-of", "csv=p=0", source.path])
+            // Pin the demuxer so a renamed/ambiguous container is not probed as
+            // an unrelated format. MKV and MP4 take the same audio-only path.
+            let demuxer = input.pathExtension.lowercased() == "mkv" ? "matroska" : "mov"
+            let info = try await ProcessRunner.run(probe, ["-v", "error", "-protocol_whitelist", "file,pipe", "-f", demuxer, "-select_streams", "a:0", "-show_entries", "stream=index", "-of", "csv=p=0", source.path])
             guard !info.isEmpty else { throw ConversionError.message("This video has no audio track.") }
-            _ = try await ProcessRunner.run(ffmpeg, ["-nostdin", "-v", "error", "-n", "-protocol_whitelist", "file,pipe", "-f", "mov", "-i", source.path, "-map", "0:a:0", "-vn", "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600)
+            _ = try await ProcessRunner.run(ffmpeg, ["-nostdin", "-v", "error", "-n", "-protocol_whitelist", "file,pipe", "-f", demuxer, "-i", source.path, "-map", "0:a:0", "-vn", "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600)
             let verification = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", result.path])
             guard let duration = Double(String(decoding: verification, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)), duration > 0 else {
                 throw ConversionError.message("Output audio could not be verified.")
@@ -80,18 +83,32 @@ public enum Converter {
                     limitMessage: "SVG must be UTF-8 and smaller than 20 MB."
                 )
                 let svgSize = try SVGDocument.validate(data)
-                let renderWidth = options.width > 0 ? Double(options.width) : svgSize.width * options.scale
-                let renderHeight = svgSize.height * renderWidth / svgSize.width
-                guard renderWidth >= 1, renderHeight >= 1, renderWidth <= 16_384, renderHeight <= 16_384,
-                      renderWidth * renderHeight <= 40_000_000 else {
-                    throw ConversionError.message("SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
+                let renderWidth: Double
+                let renderHeight: Double
+                var args = ["--format", "png"]
+                if options.width > 0 {
+                    // Width-only lets the renderer derive height from the intrinsic
+                    // aspect ratio; the requested width stays exact.
+                    renderWidth = Double(options.width)
+                    renderHeight = (svgSize.height * renderWidth / svgSize.width).rounded()
+                    guard renderWidth >= 1, renderHeight >= 1, renderWidth <= 16_384, renderHeight <= 16_384,
+                          renderWidth * renderHeight <= 40_000_000 else {
+                        throw ConversionError.message("SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
+                    }
+                    args += ["--keep-aspect-ratio", "--width", String(options.width)]
+                } else {
+                    renderWidth = (svgSize.width * options.scale).rounded()
+                    renderHeight = (svgSize.height * options.scale).rounded()
+                    guard renderWidth >= 1, renderHeight >= 1, renderWidth <= 16_384, renderHeight <= 16_384,
+                          renderWidth * renderHeight <= 40_000_000 else {
+                        throw ConversionError.message("SVG output exceeds the 40 megapixel or 16,384 pixel limit.")
+                    }
+                    args += ["--zoom", String(options.scale)]
                 }
                 try Task.checkCancellation()
                 let isolated = temporary.appendingPathComponent("input.svg")
                 try data.write(to: isolated)
                 sourceURL = temporary.appendingPathComponent("render.png")
-                var args = ["--format", "png", "--keep-aspect-ratio"]
-                args += ["--width", String(Int(renderWidth.rounded())), "--height", String(Int(renderHeight.rounded()))]
                 args += ["--output", sourceURL.path, isolated.path]
                 _ = try await ProcessRunner.run(renderer, args, timeout: 30)
             }
@@ -102,6 +119,9 @@ public enum Converter {
                   sourceWidth > 0, sourceHeight > 0,
                   Double(sourceWidth) * Double(sourceHeight) <= 80_000_000 else {
                 throw ConversionError.message("Cannot read this image.")
+            }
+            if input.pathExtension.lowercased() == "svg", options.width > 0, sourceWidth != options.width {
+                throw ConversionError.message("SVG renderer produced an unexpected width.")
             }
             let orientation = properties[kCGImagePropertyOrientation] as? Int ?? 1
             let displayedWidth = (5...8).contains(orientation) ? sourceHeight : sourceWidth

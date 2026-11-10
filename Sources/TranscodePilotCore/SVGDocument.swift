@@ -7,6 +7,15 @@ final class SVGDocument: NSObject, XMLParserDelegate {
     var styleText = ""
     var inStyle = false
 
+    private enum Length {
+        case pixels(Double)
+        case percent(Double)
+    }
+
+    private static let lengthExpression = try! NSRegularExpression(
+        pattern: #"^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z%]*)\s*$"#
+    )
+
     static func validate(_ data: Data) throws -> CGSize {
         guard data.count <= 20_000_000, let text = String(data: data, encoding: .utf8) else {
             throw ConversionError.message("SVG must be UTF-8 and smaller than 20 MB.")
@@ -25,7 +34,7 @@ final class SVGDocument: NSObject, XMLParserDelegate {
             throw ConversionError.message(delegate.failure ?? "Invalid SVG document.")
         }
         guard let size = delegate.size, size.width.isFinite, size.height.isFinite, size.width > 0, size.height > 0 else {
-            throw ConversionError.message("SVG needs positive pixel dimensions or a viewBox.")
+            throw ConversionError.message(delegate.failure ?? "SVG needs positive pixel dimensions or a viewBox.")
         }
         return size
     }
@@ -38,24 +47,100 @@ final class SVGDocument: NSObject, XMLParserDelegate {
         }
     }
 
+    private static func parseLength(_ raw: String) -> Length? {
+        let nsRange = NSRange(raw.startIndex..., in: raw)
+        guard let match = lengthExpression.firstMatch(in: raw, range: nsRange),
+              let numberRange = Range(match.range(at: 1), in: raw),
+              let unitRange = Range(match.range(at: 2), in: raw),
+              let number = Double(raw[numberRange]), number.isFinite else {
+            return nil
+        }
+        let unit = raw[unitRange].lowercased()
+        // CSS absolute units use the CSS 96 dpi reference pixel. Unitless values
+        // and px are already CSS pixels.
+        switch unit {
+        case "", "px":
+            return .pixels(number)
+        case "in":
+            return .pixels(number * 96)
+        case "cm":
+            return .pixels(number * 96 / 2.54)
+        case "mm":
+            return .pixels(number * 96 / 25.4)
+        case "pt":
+            return .pixels(number * 96 / 72)
+        case "pc":
+            return .pixels(number * 16)
+        case "q":
+            return .pixels(number * 96 / 101.6)
+        case "%":
+            return .percent(number)
+        default:
+            return nil
+        }
+    }
+
+    private static func resolved(_ length: Length?, reference: Double?) -> Double? {
+        switch length {
+        case .pixels(let value):
+            return value
+        case .percent(let value):
+            return reference.map { value / 100 * $0 }
+        case nil:
+            return nil
+        }
+    }
+
+    private static func intrinsicSize(width rawWidth: String?, height rawHeight: String?,
+                                      viewBox rawViewBox: String?) -> CGSize? {
+        let widthLength = rawWidth.flatMap(parseLength)
+        let heightLength = rawHeight.flatMap(parseLength)
+        if rawWidth != nil && widthLength == nil { return nil }
+        if rawHeight != nil && heightLength == nil { return nil }
+        let values = (rawViewBox ?? "").split(whereSeparator: { $0.isWhitespace || $0 == "," }).compactMap { Double($0) }
+        let viewBox = values.count == 4 ? values : nil
+        let viewWidth = viewBox.map { $0[2] }
+        let viewHeight = viewBox.map { $0[3] }
+
+        var width = resolved(widthLength, reference: viewWidth)
+        var height = resolved(heightLength, reference: viewHeight)
+
+        if let viewBox, values.count == 4, values[2] > 0, values[3] > 0 {
+            let vbWidth = values[2]
+            let vbHeight = values[3]
+            if width == nil && height == nil {
+                width = vbWidth
+                height = vbHeight
+            } else if width == nil, let height {
+                width = height * vbWidth / vbHeight
+            } else if height == nil, let width {
+                height = width * vbHeight / vbWidth
+            }
+        }
+
+        guard let width, let height, width.isFinite, height.isFinite, width > 0, height > 0 else {
+            return nil
+        }
+        return CGSize(width: width, height: height)
+    }
+
     func parser(_ parser: XMLParser, didStartElement element: String, namespaceURI: String?, qualifiedName: String?, attributes: [String: String]) {
         let name = element.lowercased().split(separator: ":").last.map(String.init) ?? element
         if name == "style" { inStyle = true; styleText = "" }
         if !root {
             guard name == "svg" else { failure = "Expected an SVG document."; parser.abortParsing(); return }
             root = true
-            let viewBox = (attributes["viewBox"] ?? "").split(whereSeparator: { $0.isWhitespace || $0 == "," }).compactMap { Double($0) }
-            func dimension(_ key: String) -> Double? {
-                guard let text = attributes[key] else { return nil }
-                return Double(text.replacingOccurrences(of: "px", with: "").trimmingCharacters(in: .whitespaces))
-            }
-            if let width = dimension("width"), let height = dimension("height") {
-                size = CGSize(width: width, height: height)
-            } else if viewBox.count == 4 { size = CGSize(width: viewBox[2], height: viewBox[3]) }
-            for key in ["width", "height"] {
-                if let raw = attributes[key], let value = Double(raw.replacingOccurrences(of: "px", with: "")), value > 16384 {
-                    failure = "SVG source dimensions exceed 16,384 pixels."; parser.abortParsing(); return
-                }
+            if let size = Self.intrinsicSize(width: attributes["width"], height: attributes["height"],
+                                             viewBox: attributes["viewBox"]) {
+                self.size = size
+            } else if attributes["width"]?.contains("%") == true || attributes["height"]?.contains("%") == true {
+                failure = "SVG percentage dimensions require a viewBox."
+                parser.abortParsing()
+                return
+            } else {
+                failure = "SVG needs positive pixel dimensions or a viewBox."
+                parser.abortParsing()
+                return
             }
         }
         if ["script", "foreignobject", "animate", "animatetransform", "set"].contains(name) {

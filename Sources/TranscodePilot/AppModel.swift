@@ -92,7 +92,10 @@ struct ConversionItem: Identifiable {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = true
-        panel.allowedContentTypes = ["svg", "png", "jpg", "jpeg", "heic", "mp4"].compactMap { UTType(filenameExtension: $0) }
+        var types = ["svg", "png", "jpg", "jpeg", "heic", "mp4"].compactMap { UTType(filenameExtension: $0) }
+        let mkv = UTType(filenameExtension: "mkv") ?? UTType(importedAs: "org.matroska.mkv")
+        types.append(mkv)
+        panel.allowedContentTypes = types
         if panel.runModal() == .OK { add(panel.urls) }
     }
 

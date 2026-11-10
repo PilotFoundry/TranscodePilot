@@ -19,7 +19,7 @@ struct MainView: View {
                             .accessibilityHidden(true)
                     }
                     Text(L("Drop files here")).font(.title2.weight(.medium))
-                    Text("SVG · PNG · JPEG · HEIC · MP4").font(.callout.monospaced()).foregroundStyle(.secondary)
+                    Text("SVG · PNG · JPEG · HEIC · MP4 · MKV").font(.callout.monospaced()).foregroundStyle(.secondary)
                     Button(L("Choose files")) { model.chooseFiles() }
                         .buttonStyle(.borderedProminent)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
