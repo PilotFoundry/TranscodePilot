@@ -88,6 +88,11 @@ than code gaps:
   quit, effects visual pass and 40 MP/SVG performance samples.
 - [x] D1–D8 design pass with local screenshot matrix, AX labels, keyboard-only
   Cmd+Return conversion and a recorded heuristic scorecard.
+- [x] About panel shows plist version/build, copyright and a clickable GitHub link;
+  Help exposes the repository. Added OSS community/compliance files and a candid
+  readiness review in `docs/OPEN_SOURCE.md`.
+- [x] Real progress bars: FFmpeg-derived percentage for MP3 and stage progress for
+  bitmap/SVG, in queue rows and the bottom bar.
 - [x] Real conversion progress: FFmpeg progress for MP3 and phase progress for
   bitmap/SVG, shown in queue rows and the bottom bar with a determinate bar.
 - [x] Ad-hoc app build/signature; four `make check` PASS groups; doctor pass.

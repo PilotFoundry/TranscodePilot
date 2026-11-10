@@ -19,6 +19,9 @@ production maturity. It complements `docs/RELEASE.md` (release engineering) and
   acceptance record.
 - Four-language UI and localization parity gate (`102` keys × 4 tables at this
   revision).
+- About panel with plist-derived version/build, copyright and a clickable GitHub
+  link; Help menu repository entry. The intended URL is configured through
+  `TPProjectURL`.
 - Synthetic, committed test fixtures; personal media and personal screenshots are
   not committed.
 
