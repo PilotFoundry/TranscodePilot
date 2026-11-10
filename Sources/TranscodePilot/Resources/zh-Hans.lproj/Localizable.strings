@@ -80,3 +80,8 @@
 "The conversion failed." = "转换失败。";
 "Retry" = "重试";
 "The destination disk is full." = "目标磁盘已满。";
+"Clear Completed" = "清除已完成";
+"Clear All" = "清除全部";
+"Queue actions" = "队列操作";
+"Some conversion engines are missing." = "部分转换引擎缺失。";
+"Convert again" = "重新转换";

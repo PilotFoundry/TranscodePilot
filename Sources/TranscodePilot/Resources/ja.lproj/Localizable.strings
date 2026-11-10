@@ -80,3 +80,8 @@
 "The conversion failed." = "変換に失敗しました。";
 "Retry" = "再試行";
 "The destination disk is full." = "出力先のディスクがいっぱいです。";
+"Clear Completed" = "完了分を消去";
+"Clear All" = "すべて消去";
+"Queue actions" = "キューの操作";
+"Some conversion engines are missing." = "一部の変換エンジンが見つかりません。";
+"Convert again" = "再変換";

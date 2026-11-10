@@ -29,4 +29,18 @@ public enum PreferenceDefaults {
         }
         return value
     }
+
+    /// Photos should not be enlarged by default; SVGs/videos keep the 2x
+    /// baseline. An explicitly stored valid scale always wins.
+    public static func preferredScale(_ stored: Double?, kind: SourceKind?) -> Double {
+        if let value = stored, value.isFinite, allowedScales.contains(value) {
+            return value
+        }
+        return kind == .image ? 1 : scale
+    }
+
+    public static func sanitizedWidth(_ stored: Int?) -> Int {
+        guard let value = stored, (0...16_384).contains(value) else { return 0 }
+        return value
+    }
 }

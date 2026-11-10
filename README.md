@@ -36,6 +36,8 @@ Invalid widths or output limits are shown inline and Convert stays disabled
 while a pending file is invalid. The inspector shows estimated output dimensions.
 JPEG fills transparent areas white. Image outputs use 8-bit sRGB.
 Successful tasks stay in the current queue; change settings to convert again.
+Images start at 1× and SVG/video at 2× unless a scale is saved; width and other
+settings are saved locally. Files added during a conversion join the next run.
 Settings and the last output folder are saved locally; the queue is session-only.
 Quitting during conversion cancels the active task, waits briefly for cleanup,
 then quits; the window cannot be closed while a conversion is running.

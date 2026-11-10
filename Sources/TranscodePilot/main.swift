@@ -207,7 +207,11 @@ extension NSToolbarItem.Identifier {
 
     func validateToolbarItem(_ item: NSToolbarItem) -> Bool {
         switch item.itemIdentifier {
-        case .addFiles, .outputFolder:
+        case .addFiles:
+            // New files join the queue for the next run; the active job list is
+            // already snapshotted.
+            return true
+        case .outputFolder:
             return !model.running
         default:
             return true
@@ -217,8 +221,9 @@ extension NSToolbarItem.Identifier {
     // MARK: - App delegate
 
     @objc func about() {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
         NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "TranscodePilot",
-            .applicationVersion: "0.1.0",
+            .applicationVersion: version,
             .credits: NSAttributedString(string: "PilotFoundry · MIT\n" + L("Local media conversion") + "\nFFmpeg / librsvg: external development dependencies")])
     }
 

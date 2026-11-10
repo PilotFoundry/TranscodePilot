@@ -51,6 +51,8 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
   width-only explicit sizing, zoom scaling and requested-vs-actual checks.
 - [x] Typed app failures, localized app-owned errors, English engine detail and
   Retry / choose-output-folder recovery actions.
+- [x] Queue controls, stable drop ordering, apply-to-similar scope, saved width /
+  kind-aware scale defaults, engine warning and plist-backed About version.
 - [x] Ad-hoc app build/signature; four `make check` PASS groups; doctor pass.
 
 ## Next landing plan
@@ -202,20 +204,21 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 
 ## P1 — Workflow and product behavior
 
-- [ ] Add single-task retry/reconvert and clear-completed/clear-queue actions.
-  Preserve access to existing output while changing options where practical.
-- [ ] Define queue behavior for files added mid-run: next run vs current run;
-  keep drop ordering stable and show completed/failed/remaining counts.
-- [ ] Clarify apply-to-similar scope: avoid unexpectedly resetting completed work.
-- [ ] Preserve useful size preferences explicitly; width is not saved. Separate
-  sensible SVG and bitmap defaults so photos are not enlarged by default.
+- [x] Add single-task retry/reconvert and clear-completed/clear-queue actions.
+- [ ] Preserve access to existing output while changing options where practical
+  (changing settings currently clears the previous preview/result).
+- [x] Define queue behavior for files added mid-run: new files join the next run;
+  drop ordering is stable and completed/failed/pending counts are shown.
+- [x] Clarify apply-to-similar scope: completed work is no longer reset.
+- [x] Preserve useful size preferences explicitly: width and scale are saved;
+  photos default to 1× while SVG/video keep 2×.
 - [ ] Display output path unambiguously when two folders share a name; handle
   moved/deleted output, revoked destination and unmounted volumes gracefully.
-- [ ] Show engine readiness before conversion; keep install commands in developer
-  help, not the normal end-user recovery flow for a packaged release.
+- [x] Show engine readiness before conversion in the bottom bar; install commands
+  remain in developer help rather than the normal recovery flow.
 - [ ] Verify drag/drop, Finder Open With and opening files before window creation;
   reject directories/unsupported items with useful feedback.
-- [ ] Read version from `Info.plist` rather than hardcoding the About-panel version.
+- [x] Read the About-panel version from `Info.plist`.
 - [ ] Offer dragging/copying exported files if real use shows Finder reveal is slow.
 
 ## P1 — Reliability hardening (from the 2026-11-06 review)

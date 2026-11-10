@@ -194,3 +194,16 @@ development verification aid, not an application dependency.
   Folder. Validation errors remain inline and disable Convert.
 - GUI acceptance: a corrupt MP4 produced the localized “转换引擎失败。” message with
   English engine detail and a working Retry button.
+
+## Queue and workflow — 2026-11-10
+
+- Added Retry for failed items and Convert Again for completed items, plus
+  Clear Completed / Clear All queue actions.
+- Files added while a conversion is running join the next run; the active job
+  list is snapshotted. Drag/drop URLs are collected by index so queue ordering is
+  independent of provider completion order. Completed/failed/pending counts are
+  shown in the queue footer.
+- apply-to-similar now skips completed items, preserving their output.
+- Width and scale are persisted; photos default to 1× while SVG/video keep 2×.
+- Engine readiness is shown in the bottom bar; About version comes from
+  `Info.plist`.

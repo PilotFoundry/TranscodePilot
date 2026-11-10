@@ -265,6 +265,12 @@ func checkSVGSizing(in folder: URL) async throws {
             try expect(PreferenceDefaults.sanitizedJPEGQuality(.nan) == 0.9, "non-finite quality uses default")
             try expect(PreferenceDefaults.sanitizedJPEGQuality(5) == 1, "quality is clamped")
             try expect(PreferenceDefaults.sanitizedAudioBitrate(999) == 192, "unexpected bitrate is sanitized")
+            try expect(PreferenceDefaults.preferredScale(nil, kind: .image) == 1, "photos default to 1x")
+            try expect(PreferenceDefaults.preferredScale(nil, kind: .svg) == 2, "SVGs default to 2x")
+            try expect(PreferenceDefaults.preferredScale(4, kind: .image) == 4, "explicit scale is retained")
+            try expect(PreferenceDefaults.sanitizedWidth(nil) == 0, "missing width uses scale mode")
+            try expect(PreferenceDefaults.sanitizedWidth(1200) == 1200, "stored width is retained")
+            try expect(PreferenceDefaults.sanitizedWidth(20_000) == 0, "oversized stored width is discarded")
 
             let empty = folder.appendingPathComponent("empty.svg")
             try Data().write(to: empty)

@@ -44,6 +44,7 @@ struct ConversionItem: Identifiable {
     @Published var outputFolder: URL?
     @Published var notice: String?
     @Published var targeted = false
+    @Published var engineWarning: String?
     private var worker: Task<Void, Never>?
     var selectedIndex: Int? { items.firstIndex(where: { $0.id == selection }) }
 
@@ -53,7 +54,15 @@ struct ConversionItem: Identifiable {
         return !pending.isEmpty && pending.allSatisfy { $0.validationError == nil }
     }
 
+    var completedCount: Int { items.filter { $0.status == "Done" }.count }
+    var failedCount: Int { items.filter { $0.status == "Failed" }.count }
+    var pendingCount: Int { items.filter { $0.status != "Done" && $0.status != "Failed" }.count }
+
     init() {
+        let missing = ["ffmpeg", "ffprobe", "rsvg-convert"].filter { Tools.find($0) == nil }
+        if !missing.isEmpty {
+            engineWarning = L("Some conversion engines are missing.") + " " + missing.joined(separator: ", ")
+        }
         if let path = UserDefaults.standard.string(forKey: "outputFolder") {
             let url = URL(fileURLWithPath: path)
             if let values = try? url.resourceValues(forKeys: [.isDirectoryKey]), values.isDirectory == true {
@@ -80,6 +89,12 @@ struct ConversionItem: Identifiable {
             var inspectionError: String?
             do { metadata = try SourceInspector.inspect(url) }
             catch { inspectionError = localizedErrorText(error) }
+            if let storedScale = defaults.object(forKey: "scale") as? Double {
+                options.scale = PreferenceDefaults.preferredScale(storedScale, kind: metadata?.kind)
+            } else {
+                options.scale = PreferenceDefaults.preferredScale(nil, kind: metadata?.kind)
+            }
+            options.width = PreferenceDefaults.sanitizedWidth(defaults.object(forKey: "width") as? Int)
             var item = ConversionItem(source: url, options: options, metadata: metadata)
             item.validationError = inspectionError
             items.append(item)
@@ -123,6 +138,7 @@ struct ConversionItem: Identifiable {
         let defaults = UserDefaults.standard
         if options.format != .mp3 { defaults.set(options.format.rawValue, forKey: "imageFormat") }
         defaults.set(options.scale, forKey: "scale")
+        defaults.set(options.width, forKey: "width")
         defaults.set(options.jpegQuality, forKey: "quality")
         defaults.set(options.whiteBackground, forKey: "whiteBackground")
         defaults.set(options.audioBitrate, forKey: "bitrate")
@@ -131,7 +147,8 @@ struct ConversionItem: Identifiable {
     func applyToSimilar() {
         guard let index = selectedIndex, !running else { return }
         let options = items[index].options
-        for i in items.indices where Converter.formats(for: items[i].source).contains(options.format) {
+        for i in items.indices where Converter.formats(for: items[i].source).contains(options.format)
+            && items[i].status != "Done" {
             items[i].options = options
             items[i].status = "Ready"
             items[i].output = nil
@@ -175,12 +192,32 @@ struct ConversionItem: Identifiable {
     func cancel() { worker?.cancel() }
 
     func retrySelected() {
+        reconvertSelected(requireFailure: true)
+    }
+
+    func reconvertSelected(requireFailure: Bool = false) {
         guard !running, let index = selectedIndex else { return }
-        guard items[index].status == "Failed" || items[index].status == "Cancelled" else { return }
+        if requireFailure {
+            guard items[index].status == "Failed" || items[index].status == "Cancelled" else { return }
+        }
         items[index].status = "Ready"
+        items[index].output = nil
         items[index].error = nil
         items[index].failureCode = nil
+        refreshValidation(at: index)
         start()
+    }
+
+    func clearCompleted() {
+        guard !running else { return }
+        items.removeAll { $0.status == "Done" }
+        selection = items.first?.id
+    }
+
+    func clearAll() {
+        guard !running else { return }
+        items.removeAll()
+        selection = nil
     }
     func removeSelected() {
         guard !running else { return }

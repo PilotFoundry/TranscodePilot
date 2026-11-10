@@ -46,13 +46,33 @@ struct MainView: View {
                                 }.padding(.vertical, 8).tag(item.id)
                             }
                         }.listStyle(.inset)
-                        HStack {
-                            Text("\(model.items.count) " + L("files")).font(.caption).foregroundStyle(.secondary)
+                        HStack(spacing: Design.Spacing.xs) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(model.items.count) " + L("files")).font(.caption).foregroundStyle(.secondary)
+                                if model.completedCount > 0 || model.failedCount > 0 {
+                                    Text("\(model.completedCount) " + L("Done") + " · \(model.failedCount) " + L("Failed") + " · \(model.pendingCount) " + L("Ready"))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
                             Spacer()
                             Button { model.removeSelected() } label: { Image(systemName: "minus") }
                                 .disabled(model.running || model.selection == nil)
                                 .help(L("Remove"))
                                 .accessibilityLabel(L("Remove"))
+                            Menu {
+                                Button(L("Clear Completed")) { model.clearCompleted() }
+                                    .disabled(model.running || model.completedCount == 0)
+                                Button(L("Clear All")) { model.clearAll() }
+                                    .disabled(model.running || model.items.isEmpty)
+                            } label: {
+                                Image(systemName: "ellipsis.circle")
+                            }
+                            .menuStyle(.borderlessButton)
+                            .fixedSize()
+                            .help(L("Queue actions"))
+                            .accessibilityLabel(L("Queue actions"))
                         }.padding(12)
                     }.frame(minWidth: 290, idealWidth: 350)
                     if let index = model.selectedIndex {
@@ -73,6 +93,13 @@ struct MainView: View {
                 } else {
                     Text(L("Choose output folder")).font(.caption).foregroundStyle(.secondary)
                 }
+                if let engineWarning = model.engineWarning {
+                    Label(engineWarning, systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .lineLimit(1)
+                        .help(engineWarning)
+                }
                 Spacer()
                 if model.running {
                     Text(L("Converting")).font(.caption).foregroundStyle(.secondary)
@@ -87,10 +114,14 @@ struct MainView: View {
         .frame(minWidth: 760, minHeight: 540)
         .background(model.targeted ? Design.Palette.accent.opacity(0.08) : Color(nsColor: .windowBackgroundColor))
         .onDrop(of: [.fileURL], isTargeted: $model.targeted) { providers in
-            for provider in providers {
+            let collector = DropCollector(count: providers.count)
+            for (index, provider) in providers.enumerated() {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    if let url { Task { @MainActor in model.add([url]) } }
+                    collector.complete(index: index, url: url)
                 }
+            }
+            collector.group.notify(queue: .main) {
+                model.add(collector.urls)
             }
             return true
         }
@@ -174,6 +205,7 @@ struct MainView: View {
                     HStack {
                         Button(L("Show in Finder")) { NSWorkspace.shared.activateFileViewerSelecting([output]) }
                         Button(L("Open")) { NSWorkspace.shared.open(output) }
+                        Button(L("Convert again")) { model.reconvertSelected() }
                     }
                 } else if item.options.format != .mp3 {
                     Label(L("Preview appears after conversion"), systemImage: "photo").font(.caption).foregroundStyle(.secondary)
@@ -205,5 +237,31 @@ struct MainView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }
+    }
+}
+
+
+/// Collects asynchronous drop providers in their original order.
+private final class DropCollector: @unchecked Sendable {
+    let group = DispatchGroup()
+    private let lock = NSLock()
+    private var collected: [URL?]
+
+    init(count: Int) {
+        collected = Array(repeating: nil, count: count)
+        for _ in 0..<count { group.enter() }
+    }
+
+    func complete(index: Int, url: URL?) {
+        lock.lock()
+        collected[index] = url
+        lock.unlock()
+        group.leave()
+    }
+
+    var urls: [URL] {
+        lock.lock()
+        defer { lock.unlock() }
+        return collected.compactMap { $0 }
     }
 }

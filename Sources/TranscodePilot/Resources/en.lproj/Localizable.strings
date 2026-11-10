@@ -80,3 +80,8 @@
 "The conversion failed." = "The conversion failed.";
 "Retry" = "Retry";
 "The destination disk is full." = "The destination disk is full.";
+"Clear Completed" = "Clear Completed";
+"Clear All" = "Clear All";
+"Queue actions" = "Queue actions";
+"Some conversion engines are missing." = "Some conversion engines are missing.";
+"Convert again" = "Convert again";
