@@ -43,13 +43,14 @@ estimated output text, the conversion-in-progress close alert, cancel during a
 2-hour MP3 conversion (status, child process, temporary directory and output), and
 ⌘Q during conversion after fixing the previously disabled app-menu Quit item.
 It also rendered a real 2700×1030 CJK swimlane SVG at 1× (2700×1030) and 2×
-(5400×2060) with all CJK labels and connector lines present; a supplied iShot MP4
-was correctly rejected because it contains no audio stream.
+(5400×2060) with all CJK labels and connector lines present. A supplied iShot MP4
+was correctly rejected because it contains no audio stream. A second supplied MP4
+with AAC mono audio converted to MP3 192 kbps, 44.1 kHz mono, 11.469206 s versus an
+11.467755 s source audio track, with the source hash unchanged.
 
 The tool is a local verification aid, not a runtime dependency. Not covered: real
-SVGs with gradients/masks/filters/alpha, a real MP4 with audio, SVG/bitmap
-in-flight cancellation, VoiceOver/light-dark, exFAT or network destinations,
-Intel and macOS 14.
+SVGs with gradients/masks/filters/alpha, SVG/bitmap in-flight cancellation,
+VoiceOver/light-dark, exFAT or network destinations, Intel and macOS 14.
 
 Only recorded automated checks count as exercised. Missing fonts may substitute;
 the app does not claim pixel equivalence with browsers or other SVG renderers.

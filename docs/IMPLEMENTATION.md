@@ -106,6 +106,9 @@ development verification aid, not an application dependency.
 - Real user MP4 (iShot screen recording): ffprobe reports only an h264 video
   stream and no audio; the app correctly reports “This video has no audio track.”
   and produces no output.
-- Remaining manual acceptance: real SVGs with gradients/masks/filters/alpha, a real
-  MP4 with an audio track, SVG/bitmap in-flight cancellation, VoiceOver/light-dark,
-  exFAT/network destinations, Intel and macOS 14.
+- Real user MP4 with audio (HEVC + AAC mono, 11.467755 s audio): converted through
+  the UI to MP3 192 kbps, 44.1 kHz mono, 11.469206 s (~1.5 ms longer); source hash
+  unchanged, no child process or temporary directory left.
+- Remaining manual acceptance: real SVGs with gradients/masks/filters/alpha,
+  SVG/bitmap in-flight cancellation, VoiceOver/light-dark, exFAT/network
+  destinations, Intel and macOS 14.
