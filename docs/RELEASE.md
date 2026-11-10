@@ -47,7 +47,7 @@ bundle cleanliness, ad-hoc signature and architecture.
 
 - `make check`: PASS (4 groups).
 - `make app`: PASS; ad-hoc signature verified.
-- `make verify`: PASS; 93 localization keys × 4 tables; MKV document type present.
+- `make verify`: PASS; 94 localization keys × 4 tables; MKV document type present.
 - `make release` / `make package`: PASS; ZIP + SHA256 generated and re-verified.
 - GUI: MKV, real 1.29 GB MKV, real 1.2 GB MP4, SVG sizing, huge-file MP3, effects
   visual pass, in-flight bitmap/SVG cancel, corrupt failure/recovery, close-alert

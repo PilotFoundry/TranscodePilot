@@ -111,7 +111,7 @@ for that manual pass.
 
 - `make check`: PASS (4 groups).
 - `make app`: PASS; ad-hoc codesign verified.
-- `make verify`: PASS; 93 localization keys × 4 tables; MKV document type present.
+- `make verify`: PASS; 94 localization keys × 4 tables; MKV document type present.
 - `make release` / `make package`: PASS; `.build/release/TranscodePilot-0.1.0-arm64.zip`
   plus SHA256 re-verified from an extracted copy.
 - In-flight cancel: 40 MP bitmap and 40 MP filtered SVG both reached Cancelled with
