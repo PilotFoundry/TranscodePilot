@@ -60,9 +60,12 @@ headless refs/clicks; Accessibility and Screen Recording granted by the user):
   visually present. A supplied MP4 without audio was correctly rejected with
   “This video has no audio track.” and produced no MP3. A second supplied MP4
   (HEVC + AAC mono) converted to MP3 at 192 kbps, 44.1 kHz mono, 11.469206 s
-  versus an 11.467755 s source audio track (about 1.5 ms difference).
-- Not yet covered: real SVGs with gradients/masks/filters/alpha, SVG/bitmap
-  in-flight cancellation, VoiceOver/light-dark, and exFAT/network volumes.
+  versus an 11.467755 s source audio track (about 1.5 ms difference). The
+  “Airy Blue Sky with Puffy Clouds” SVG (1672×941, 381 paths) rendered correctly
+  at 1× (1672×941) and 4× (6688×3764), with no missing paths or blank regions.
+- Not yet covered: real SVGs with gradients/masks/filters/alpha (the samples above
+  do not contain those features), SVG/bitmap in-flight cancellation,
+  VoiceOver/light-dark, and exFAT/network volumes.
 
 ## P0 — Reliable daily use
 
@@ -106,10 +109,11 @@ headless refs/clicks; Accessibility and Screen Recording granted by the user):
   Keep APFS atomic publication and collision safety.
 - [ ] **Real-file acceptance:** collect non-sensitive representative SVGs and MP4s;
   compare gradients, masks, filters, CJK typography, alpha edges and audio duration.
-  Partial 2026-11-10: the user's CJK swimlane SVG rendered correctly at 1× and 2×;
-  a no-audio MP4 was correctly rejected; a second MP4 with AAC audio converted to
-  MP3 at 192 kbps with a ~1.5 ms duration difference. Still need real SVGs with
-  gradients/masks/filters/alpha. Samples stay local and are not committed.
+  Partial 2026-11-10: CJK swimlane and complex-path cloud SVGs rendered correctly
+  at 1×/2×/4×; a no-audio MP4 was correctly rejected; a second MP4 with AAC audio
+  converted to MP3 at 192 kbps with a ~1.5 ms duration difference. Still need real
+  SVGs with gradients/masks/filters/alpha. Samples stay local and are not
+  committed.
 - [ ] **User-friendly failures:** localize app-owned errors, distinguish missing
   engine/no audio/invalid SVG/permission/disk-full cases, and offer a recovery action.
 

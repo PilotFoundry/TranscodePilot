@@ -109,6 +109,9 @@ development verification aid, not an application dependency.
 - Real user MP4 with audio (HEVC + AAC mono, 11.467755 s audio): converted through
   the UI to MP3 192 kbps, 44.1 kHz mono, 11.469206 s (~1.5 ms longer); source hash
   unchanged, no child process or temporary directory left.
+- Real user complex-path SVG (“Airy Blue Sky with Puffy Clouds”, 1672×941, 381
+  paths, opaque): rendered at 1× (1672×941) and 4× (6688×3764); paths, colors and
+  edges were visually complete.
 - Remaining manual acceptance: real SVGs with gradients/masks/filters/alpha,
   SVG/bitmap in-flight cancellation, VoiceOver/light-dark, exFAT/network
   destinations, Intel and macOS 14.

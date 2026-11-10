@@ -46,7 +46,9 @@ It also rendered a real 2700×1030 CJK swimlane SVG at 1× (2700×1030) and 2×
 (5400×2060) with all CJK labels and connector lines present. A supplied iShot MP4
 was correctly rejected because it contains no audio stream. A second supplied MP4
 with AAC mono audio converted to MP3 192 kbps, 44.1 kHz mono, 11.469206 s versus an
-11.467755 s source audio track, with the source hash unchanged.
+11.467755 s source audio track, with the source hash unchanged. A complex-path
+SVG (“Airy Blue Sky with Puffy Clouds”, 1672×941, 381 paths, opaque) rendered at
+1× (1672×941) and 4× (6688×3764) with all paths and colors present.
 
 The tool is a local verification aid, not a runtime dependency. Not covered: real
 SVGs with gradients/masks/filters/alpha, SVG/bitmap in-flight cancellation,
