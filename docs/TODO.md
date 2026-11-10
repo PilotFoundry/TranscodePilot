@@ -34,6 +34,29 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
 - Design/UIUX is now a first-class workstream; its baseline and review method are
   in `docs/DESIGN.md`.
 
+### Autonomous execution summary — 2026-11-10
+
+All locally actionable P0/P1/P2 work and the D1–D8 design pass are implemented,
+tested and documented. Local evidence: `make check` (4 PASS groups), `make app`,
+`make verify` (94 keys × 4 tables), `make release`/`make package` (ZIP + SHA256),
+D1 screenshot matrix, AX-label and Cmd+Return keyboard pass, in-flight bitmap/SVG
+cancel, graceful quit during conversion, 1.2–1.29 GB real MP4/MKV conversions and
+an effects visual pass.
+
+Remaining items are external, hardware/credential/manual, or demand-driven rather
+than code gaps:
+
+- P0: real exFAT/network-volume acceptance (mount unavailable here); full SVG
+  renderer-sandbox proof (documented residual risk).
+- D9/D10: live VoiceOver/focus-order pass (AX labels and keyboard flow are done).
+- P1: TCC folder-prompt acceptance; engine rlimit memory/CPU caps; engine-missing
+  and output-disconnect injections; UI queue state-machine tests; drag/drop
+  physical pass; exported-file drag/copy is conditional on real-use need.
+- P2: remote publication, Developer ID/notarization, Intel/macOS 14 and clean-Mac
+  validation, pinned/portable engine builds and legal/license/domain decisions.
+- P3: demand-driven formats/Quick Actions/presets/embedded images; explicitly not
+  v0.1 blockers.
+
 ### Completed milestones
 
 - [x] Local Git baseline, reproducible `SWIFT_FLAGS`, default SwiftPM backend.
