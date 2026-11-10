@@ -13,7 +13,9 @@ public enum Tools {
 }
 
 public enum ProcessRunner {
-    public static func run(_ executable: URL, _ arguments: [String], timeout: TimeInterval = 300) async throws -> Data {
+    public static func run(_ executable: URL, _ arguments: [String], timeout: TimeInterval = 300,
+                           progressFile: URL? = nil,
+                           onProgress: (@Sendable (String) -> Void)? = nil) async throws -> Data {
         let process = Process()
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("transcodepilot-process-\(UUID())")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -37,6 +39,10 @@ public enum ProcessRunner {
             while process.isRunning {
                 try Task.checkCancellation()
                 if Date() > deadline { throw ConversionError.code(.timeout, detail: "Conversion timed out.") }
+                if let progressFile, let onProgress,
+                   let text = try? String(contentsOf: progressFile, encoding: .utf8) {
+                    onProgress(text)
+                }
                 try await Task.sleep(nanoseconds: 50_000_000)
             }
         } catch {
@@ -51,6 +57,10 @@ public enum ProcessRunner {
             let forceDeadline = Date().addingTimeInterval(1)
             while process.isRunning && Date() < forceDeadline { usleep(10_000) }
             throw error
+        }
+        if let progressFile, let onProgress,
+           let text = try? String(contentsOf: progressFile, encoding: .utf8) {
+            onProgress(text)
         }
         guard process.terminationStatus == 0 else {
             let handle = try FileHandle(forReadingFrom: errorURL)

@@ -140,6 +140,45 @@ func checkReliabilityHardening(in folder: URL) async throws {
     try? FileManager.default.removeItem(at: fresh)
 }
 
+final class ProgressLog: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [ConversionProgress] = []
+
+    func append(_ value: ConversionProgress) {
+        lock.lock()
+        storage.append(value)
+        lock.unlock()
+    }
+
+    var values: [ConversionProgress] {
+        lock.lock()
+        defer { lock.unlock() }
+        return storage
+    }
+}
+
+func checkProgress(in folder: URL, svg: URL, video: URL) async throws {
+    var imageOptions = ConversionOptions()
+    imageOptions.width = 100
+    let imageLog = ProgressLog()
+    _ = try await Converter.convert(svg, to: folder, options: imageOptions) { imageLog.append($0) }
+    let imageValues = imageLog.values
+    try expect(!imageValues.isEmpty, "image conversion reports progress")
+    try expect(imageValues.last!.fraction >= 0.95, "image progress reaches completion")
+    try expect(zip(imageValues, imageValues.dropFirst()).allSatisfy { $0.fraction <= $1.fraction }, "image progress is monotonic")
+    try expect(imageValues.contains { $0.phase == .rendering || $0.phase == .decoding }, "image progress reports phases")
+
+    var audioOptions = ConversionOptions()
+    audioOptions.format = .mp3
+    let audioLog = ProgressLog()
+    _ = try await Converter.convert(video, to: folder, options: audioOptions) { audioLog.append($0) }
+    let audioValues = audioLog.values
+    try expect(!audioValues.isEmpty, "audio conversion reports progress")
+    try expect(audioValues.last!.fraction >= 0.95, "audio progress reaches completion")
+    try expect(zip(audioValues, audioValues.dropFirst()).allSatisfy { $0.fraction <= $1.fraction }, "audio progress is monotonic")
+    try expect(audioValues.contains { $0.phase == .encoding }, "audio progress reports encoding")
+}
+
 func checkRegressionExtras(in folder: URL, svg: URL, ffmpeg: URL, probe: URL) async throws {
     var options = ConversionOptions()
     options.width = 100
@@ -551,6 +590,7 @@ func checkSVGSizing(in folder: URL) async throws {
             catch { rejected = true }
             try expect(rejected, "video without audio rejected")
             try await checkRegressionExtras(in: folder, svg: svg, ffmpeg: ffmpeg, probe: probe)
+            try await checkProgress(in: folder, svg: svg, video: video)
             let task = Task { try await ProcessRunner.run(URL(fileURLWithPath: "/bin/sleep"), ["10"]) }
             try await Task.sleep(nanoseconds: 100_000_000)
             let cancellationStart = Date()
@@ -560,7 +600,7 @@ func checkSVGSizing(in folder: URL) async throws {
             try expect(Date().timeIntervalSince(cancellationStart) < 3, "child process cancellation is prompt")
             let remaining = try FileManager.default.contentsOfDirectory(atPath: folder.path)
             try expect(!remaining.contains(where: { $0.hasPrefix(".transcodepilot-") }), "temporary outputs cleaned up")
-            print("PASS: MP4/MKV → MP3, corrupt containers, missing audio, child process cancellation and temporary cleanup")
+            print("PASS: MP4/MKV → MP3, progress, corrupt containers, missing audio, child process cancellation and temporary cleanup")
             print("PASS: SVG pixels, transparency, JPEG background, bitmap resize, collision safety, source preservation and unsafe input")
             print("PASS: input bounds, symlink source, cancelled conversion, planner estimates and preference sanitizing")
             print("PASS: SVG effects, sizing, trust-boundary, reliability-hardening and regression extras")

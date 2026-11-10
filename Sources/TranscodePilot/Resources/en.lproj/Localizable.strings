@@ -92,3 +92,10 @@
 "Pending" = "Pending";
 "Output preview" = "Output preview";
 "Output file is no longer available." = "Output file is no longer available.";
+"Preparing" = "Preparing";
+"Reading media" = "Reading media";
+"Rendering SVG" = "Rendering SVG";
+"Decoding image" = "Decoding image";
+"Encoding" = "Encoding";
+"Verifying output" = "Verifying output";
+"Publishing" = "Publishing";

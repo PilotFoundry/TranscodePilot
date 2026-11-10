@@ -36,9 +36,14 @@ public enum Converter {
         }
     }
 
-    public static func convert(_ input: URL, to directory: URL, options: ConversionOptions) async throws -> URL {
+    public static func convert(_ input: URL, to directory: URL, options: ConversionOptions,
+                               progress: ConversionProgressHandler? = nil) async throws -> URL {
         try options.validate()
         try Task.checkCancellation()
+        let report: @Sendable (Double, ConversionPhase) -> Void = { fraction, phase in
+            progress?(ConversionProgress(fraction: fraction, phase: phase))
+        }
+        report(0.02, .preparing)
         guard formats(for: input).contains(options.format) else {
             throw ConversionError.code(.invalidSettings, detail: "Unsupported format or invalid conversion settings.")
         }
@@ -59,6 +64,7 @@ public enum Converter {
         defer { try? fm.removeItem(at: temporary) }
         let result = temporary.appendingPathComponent("output.\(options.format.rawValue)")
         let sourceSignature = InputFile.signature(of: source)
+        report(0.05, .reading)
         if options.format == .mp3 {
             try requireCapacity(in: directory, bytes: 64 * 1024 * 1024)
             guard let ffmpeg = Tools.find("ffmpeg"), let probe = Tools.find("ffprobe") else {
@@ -70,12 +76,36 @@ public enum Converter {
             let probeOptions = ["-v", "error", "-protocol_whitelist", "file,pipe",
                                 "-probesize", "64M", "-analyzeduration", "100000000",
                                 "-f", demuxer]
-            let info = try await ProcessRunner.run(probe, probeOptions + ["-select_streams", "a:0", "-show_entries", "stream=index", "-of", "csv=p=0", source.path], timeout: 60)
-            guard !info.isEmpty else { throw ConversionError.code(.noAudioTrack, detail: "This video has no audio track.") }
-            _ = try await ProcessRunner.run(ffmpeg, ["-nostdin", "-v", "error", "-n", "-protocol_whitelist", "file,pipe",
+            let info = try await ProcessRunner.run(probe, probeOptions + ["-select_streams", "a:0", "-show_entries", "stream=index:format=duration", "-of", "default=noprint_wrappers=1", source.path], timeout: 60)
+            let infoText = String(decoding: info, as: UTF8.self)
+            let infoLines = infoText.split(whereSeparator: \.isNewline)
+            guard infoLines.contains(where: { $0.hasPrefix("index=") }) else {
+                throw ConversionError.code(.noAudioTrack, detail: "This video has no audio track.")
+            }
+            let sourceDuration = infoLines
+                .first(where: { $0.hasPrefix("duration=") })
+                .flatMap { Double($0.dropFirst("duration=".count)) }
+            report(0.1, .encoding)
+            let ffmpegProgress = temporary.appendingPathComponent("ffmpeg-progress")
+            _ = try await ProcessRunner.run(ffmpeg, ["-nostdin", "-v", "error", "-n", "-nostats", "-progress", ffmpegProgress.path,
+                                                      "-protocol_whitelist", "file,pipe",
                                                       "-probesize", "64M", "-analyzeduration", "100000000",
                                                       "-f", demuxer, "-i", source.path, "-map", "0:a:0", "-vn",
-                                                      "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600)
+                                                      "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", "\(options.audioBitrate)k", result.path], timeout: 3600,
+                                                     progressFile: ffmpegProgress) { text in
+                guard let sourceDuration, sourceDuration > 0 else { return }
+                let seconds = text.split(whereSeparator: \.isNewline).reversed().first { line in
+                    line.hasPrefix("out_time_us=") || line.hasPrefix("out_time_ms=")
+                }.flatMap { line -> Double? in
+                    if line.hasPrefix("out_time_us=") { return Double(line.dropFirst("out_time_us=".count)).map { $0 / 1_000_000 } }
+                    return Double(line.dropFirst("out_time_ms=".count)).map { $0 / 1_000 }
+                }
+                if let seconds {
+                    let fraction = 0.1 + min(max(seconds / sourceDuration, 0), 1) * 0.8
+                    report(fraction, .encoding)
+                }
+            }
+            report(0.93, .verifying)
             let verification = try await ProcessRunner.run(probe, ["-v", "error", "-show_entries", "stream=codec_name:format=duration", "-of", "default=noprint_wrappers=1", result.path], timeout: 60)
             let verificationText = String(decoding: verification, as: UTF8.self)
             let verifiedDuration = verificationText
@@ -85,9 +115,11 @@ public enum Converter {
             guard verificationText.contains("codec_name=mp3"), let verifiedDuration, verifiedDuration > 0 else {
                 throw ConversionError.code(.outputVerification, detail: "Output audio could not be verified as MP3.")
             }
+            report(0.97, .publishing)
         } else {
             var sourceURL = source
             if input.pathExtension.lowercased() == "svg" {
+                report(0.1, .rendering)
                 guard let renderer = Tools.find("rsvg-convert") else {
                     throw ConversionError.code(.missingEngine, detail: "Install SVG renderer: brew install librsvg")
                 }
@@ -124,7 +156,11 @@ public enum Converter {
                 try data.write(to: isolated)
                 sourceURL = temporary.appendingPathComponent("render.png")
                 args += ["--output", sourceURL.path, isolated.path]
+                report(0.12, .rendering)
                 _ = try await ProcessRunner.run(renderer, args, timeout: 30)
+                report(0.45, .decoding)
+            } else {
+                report(0.1, .decoding)
             }
             guard let sourceImage = CGImageSourceCreateWithURL(sourceURL as CFURL, nil),
                   let properties = CGImageSourceCopyPropertiesAtIndex(sourceImage, 0, nil) as? [CFString: Any],
@@ -134,6 +170,7 @@ public enum Converter {
                   Double(sourceWidth) * Double(sourceHeight) <= 80_000_000 else {
                 throw ConversionError.code(.invalidImage, detail: "Cannot read this image.")
             }
+            report(0.55, .decoding)
             if input.pathExtension.lowercased() == "svg", options.width > 0, sourceWidth != options.width {
                 throw ConversionError.code(.outputVerification, detail: "SVG renderer produced an unexpected width.")
             }
@@ -153,6 +190,7 @@ public enum Converter {
                 throw ConversionError.code(.outputLimit, detail: "Image exceeds the 40 megapixel output or 80 megapixel input limit.")
             }
             try Task.checkCancellation()
+            report(0.62, .encoding)
             let thumbnail: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceCreateThumbnailWithTransform: true,
                 kCGImageSourceThumbnailMaxPixelSize: max(width, height)]
@@ -160,6 +198,7 @@ public enum Converter {
                 throw ConversionError.code(.invalidImage, detail: "Cannot decode this image.")
             }
             try Task.checkCancellation()
+            report(0.68, .encoding)
             guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
                 space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
                 throw ConversionError.code(.invalidImage, detail: "Cannot allocate output image.")
@@ -171,24 +210,31 @@ public enum Converter {
             context.interpolationQuality = .high
             context.draw(image, in: rect)
             try Task.checkCancellation()
+            report(0.8, .encoding)
             guard let rendered = context.makeImage(), let destination = CGImageDestinationCreateWithURL(result as CFURL,
                 (options.format == .png ? UTType.png.identifier : UTType.jpeg.identifier) as CFString, 1, nil) else {
                 throw ConversionError.code(.invalidImage, detail: "Cannot create image output.")
             }
             CGImageDestinationAddImage(destination, rendered, [kCGImageDestinationLossyCompressionQuality: options.jpegQuality] as CFDictionary)
+            report(0.86, .verifying)
             guard CGImageDestinationFinalize(destination), let check = CGImageSourceCreateWithURL(result as CFURL, nil),
                   let decoded = CGImageSourceCreateImageAtIndex(check, 0, nil), decoded.width == width, decoded.height == height else {
                 throw ConversionError.code(.outputVerification, detail: "Output image verification failed.")
             }
+            report(0.93, .verifying)
             try Task.checkCancellation()
         }
         try Task.checkCancellation()
+        report(0.97, .publishing)
         let stem = limitedStem(input.deletingPathExtension().lastPathComponent)
         for index in 0..<10000 {
             let suffix = index == 0 ? "" : "-\(index)"
             let target = directory.appendingPathComponent("\(stem)\(suffix).\(options.format.rawValue)")
             // link() publishes a complete file atomically and refuses to overwrite an existing path.
-            if link(result.path, target.path) == 0 { return target }
+            if link(result.path, target.path) == 0 {
+                report(1.0, .publishing)
+                return target
+            }
             if errno == ENOSPC {
                 throw ConversionError.code(.diskFull, detail: "Cannot save output: \(String(cString: strerror(errno)))")
             }

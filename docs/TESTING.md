@@ -18,6 +18,7 @@ checks:
 - Preference sanitizing includes kind-aware scale defaults and saved-width bounds.
 - Source mutation detection and age-based temporary-directory cleanup.
 - Enlarged-SVG edge sharpness and preserved prior result while settings change.
+- Conversion progress: monotonic image stage progress and real FFmpeg-based MP3 progress reach completion.
 - Child-process cancellation/timeout completes within a bounded wait even when
   the engine does not respond to SIGTERM.
 - HEIC input (ImageIO-generated), Display P3 → sRGB normalization, mirrored EXIF,
@@ -114,7 +115,7 @@ for that manual pass.
 
 - `make check`: PASS (4 groups).
 - `make app`: PASS; ad-hoc codesign verified.
-- `make verify`: PASS; 94 localization keys × 4 tables; MKV document type present.
+- `make verify`: PASS; 101 localization keys × 4 tables; MKV document type present.
 - `make release` / `make package`: PASS; `.build/release/TranscodePilot-0.1.0-arm64.zip`
   plus SHA256 re-verified from an extracted copy.
 - In-flight cancel: 40 MP bitmap and 40 MP filtered SVG both reached Cancelled with

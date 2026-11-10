@@ -25,6 +25,8 @@
 - Native toolbar, app menu, File/Window/Help menus, branded Dock icon.
 - Queue counts, stable drop ordering, retry/reconvert, clear actions, bounded
   thumbnails and inline result preview.
+- Real conversion progress: FFmpeg progress for MP3, stage progress for
+  bitmap/SVG, shown in queue rows and the bottom bar.
 - Light/dark and four-language review; English, 简体中文, 繁體中文, 日本語.
 
 ### Packaging

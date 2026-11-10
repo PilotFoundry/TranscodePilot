@@ -92,3 +92,10 @@
 "Pending" = "待處理";
 "Output preview" = "輸出預覽";
 "Output file is no longer available." = "輸出檔案已不存在。";
+"Preparing" = "準備中";
+"Reading media" = "讀取媒體";
+"Rendering SVG" = "轉譯 SVG";
+"Decoding image" = "解碼影像";
+"Encoding" = "編碼中";
+"Verifying output" = "驗證輸出";
+"Publishing" = "發佈中";

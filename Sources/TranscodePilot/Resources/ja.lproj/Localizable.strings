@@ -92,3 +92,10 @@
 "Pending" = "待機中";
 "Output preview" = "出力プレビュー";
 "Output file is no longer available." = "出力ファイルは既に存在しません。";
+"Preparing" = "準備中";
+"Reading media" = "メディア読み込み";
+"Rendering SVG" = "SVG をレンダリング";
+"Decoding image" = "画像をデコード";
+"Encoding" = "エンコード中";
+"Verifying output" = "出力を検証中";
+"Publishing" = "公開中";

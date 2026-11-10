@@ -73,7 +73,7 @@ Every design review covers these dimensions:
 ### Motion and progress
 
 - Minimal, interruptible motion; respect Reduce Motion.
-- Show active task and completion states, never a fabricated percent.
+- Show real MP3 progress from FFmpeg and stage progress for bitmap/SVG; never fabricate a percent.
 - Disabled states need a reason (inline validation or help text), not just gray.
 
 ## Information architecture

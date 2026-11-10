@@ -268,3 +268,14 @@ development verification aid, not an application dependency.
 - Remaining external/manual items: real exFAT/network volume, TCC folder prompt,
   live VoiceOver/focus-order, engine rlimit caps, hosted CI run, Developer ID,
   Intel/macOS 14, clean-Mac, remote publication and legal/domain checks.
+
+## Conversion progress — 2026-11-10
+
+- `Converter.convert` accepts a Sendable progress handler. MP3 parses FFmpeg
+  `-progress` (`out_time_us` against the probed source duration) for a real
+  percentage; bitmap/SVG report stage progress (preparing/reading/rendering/
+  decoding/encoding/verifying/publishing).
+- `ProcessRunner` samples the progress file during its bounded child wait.
+- Queue rows and the bottom bar show a determinate bar, percent and phase label;
+  the bottom bar keeps Cancel accessible. AX labels include the percentage.
+- Checks assert monotonic progress reaching completion for image and audio paths.

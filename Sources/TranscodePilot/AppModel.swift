@@ -29,6 +29,8 @@ struct ConversionItem: Identifiable {
     var failureCode: ConversionErrorCode?
     var estimate: ConversionEstimate?
     var validationError: String?
+    var progress: Double = 0
+    var progressPhase: ConversionPhase?
 
     init(source: URL, options: ConversionOptions, metadata: SourceMetadata? = nil) {
         self.source = source
@@ -56,6 +58,7 @@ struct ConversionItem: Identifiable {
         return !pending.isEmpty && pending.allSatisfy { $0.validationError == nil }
     }
 
+    var activeItem: ConversionItem? { items.first { $0.status == "Converting" } }
     var completedCount: Int { items.filter { $0.status == "Done" }.count }
     var failedCount: Int { items.filter { $0.status == "Failed" }.count }
     var pendingCount: Int { items.filter { $0.status != "Done" && $0.status != "Failed" }.count }
@@ -180,15 +183,32 @@ struct ConversionItem: Identifiable {
                 items[index].status = "Converting"
                 items[index].error = nil
                 items[index].failureCode = nil
+                items[index].progress = 0
+                items[index].progressPhase = .preparing
+                let jobID = job.id
                 do {
-                    let result = try await Task.detached { try await Converter.convert(job.source, to: directory, options: job.options) }.valueWithCancellation()
+                    let result = try await Task.detached {
+                        try await Converter.convert(job.source, to: directory, options: job.options) { update in
+                            Task { @MainActor [weak self] in
+                                guard let self,
+                                      let current = self.items.firstIndex(where: { $0.id == jobID }),
+                                      self.items[current].status == "Converting" else { return }
+                                self.items[current].progress = max(self.items[current].progress, update.fraction)
+                                self.items[current].progressPhase = update.phase
+                            }
+                        }
+                    }.valueWithCancellation()
                     items[index].output = result
+                    items[index].progress = 1
+                    items[index].progressPhase = nil
                     items[index].status = "Done"
                 } catch is CancellationError {
                     items[index].status = "Cancelled"
+                    items[index].progressPhase = nil
                     break
                 } catch {
                     items[index].status = "Failed"
+                    items[index].progressPhase = nil
                     items[index].error = localizedErrorText(error)
                     items[index].failureCode = (error as? ConversionError)?.errorCode
                 }

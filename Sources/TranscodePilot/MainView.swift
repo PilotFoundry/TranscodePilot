@@ -56,7 +56,15 @@ struct MainView: View {
                                             .foregroundStyle(.red)
                                             .help(validation)
                                     } else if item.status == "Converting" {
-                                        ProgressView().controlSize(.small).accessibilityLabel(L("Converting"))
+                                        VStack(alignment: .trailing, spacing: 3) {
+                                            Text("\(progressPercent(item.progress))%")
+                                                .font(.caption2.monospacedDigit())
+                                                .foregroundStyle(.secondary)
+                                            ProgressView(value: min(max(item.progress, 0), 1))
+                                                .frame(width: 72)
+                                        }
+                                        .accessibilityElement(children: .combine)
+                                        .accessibilityLabel(L("Converting") + " \(progressPercent(item.progress))%")
                                     }
                                     else { Text(L(item.status)).font(.caption).foregroundStyle(statusColor(item.status)) }
                                 }
@@ -125,7 +133,20 @@ struct MainView: View {
                 }
                 Spacer()
                 if model.running {
-                    Text(L("Converting")).font(.caption).foregroundStyle(.secondary)
+                    if let active = model.activeItem {
+                        VStack(alignment: .trailing, spacing: 3) {
+                            HStack(spacing: 6) {
+                                Text(phaseLabel(active.progressPhase)).font(.caption2).foregroundStyle(.secondary)
+                                Text("\(progressPercent(active.progress))%")
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                            ProgressView(value: min(max(active.progress, 0), 1))
+                                .frame(width: 180)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(L("Converting") + " \(progressPercent(active.progress))%")
+                    }
                     Button(L("Cancel")) { model.cancel() }.keyboardShortcut(.cancelAction)
                 } else {
                     Button(L(model.items.contains { $0.status == "Failed" || $0.status == "Cancelled" } ? "Retry remaining" : "Convert")) { model.start() }
@@ -290,6 +311,23 @@ struct MainView: View {
                 return "\(ext) · \(formatDuration(duration)) → MP3"
             }
             return item.options.format == .mp3 ? "\(ext) → MP3" : ext
+        }
+    }
+
+    func progressPercent(_ value: Double) -> Int {
+        Int((min(max(value, 0), 1) * 100).rounded())
+    }
+
+    func phaseLabel(_ phase: ConversionPhase?) -> String {
+        switch phase {
+        case .preparing: return L("Preparing")
+        case .reading: return L("Reading media")
+        case .rendering: return L("Rendering SVG")
+        case .decoding: return L("Decoding image")
+        case .encoding: return L("Encoding")
+        case .verifying: return L("Verifying output")
+        case .publishing: return L("Publishing")
+        case .none: return L("Converting")
         }
     }
 
