@@ -11,6 +11,10 @@ checks:
   aspect ratios.
 - MP3 codec, silent-video rejection, child-process cancellation grace, cancelled
   conversion before publication and sanitized stored preferences.
+- MKV audio extraction through the explicit matroska demuxer.
+- SVG sizing fixtures: physical units at 96 dpi, viewBox-only, percentage,
+  missing-one-dimension, fractional sizes, explicit requested width and rejection
+  of unsupported percentage/missing-dimension documents.
 - SVG effects corpus: linear/radial gradients, Gaussian blur, feColorMatrix, mask,
   clipPath and fill-opacity transparency, including PNG alpha sampling and JPEG
   white flattening. Fixtures live in
@@ -29,6 +33,8 @@ Screen Recording or Full Disk Access permission.
 Manual acceptance before a public release:
 
 - Actual user SVGs: Chinese/Japanese fonts, gradients, masks, filters and clipping.
+- SVG sizing: physical units, percentage+viewBox, missing dimension and explicit
+  requested width (automated fixtures cover the rules; real files remain useful).
 - ~~Quit/close while converting: cancellation wait, termination, blocked window
   close and Dock reopen.~~ Verified 2026-11-10 with agent-desktop: close alert,
   idle close/quit, and ⌘Q during conversion. (Dock reopen remains defensive and

@@ -22,10 +22,12 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
   ~1.5 ms duration difference. Source hashes unchanged.
 - A reusable synthetic SVG effects corpus is in
   `Sources/TranscodePilotChecks/Fixtures/SVGEffects/`: gradients, blur,
-  feColorMatrix, mask, clipPath and fill-opacity/JPEG flattening. `make check`
-  now has four PASS groups. Test coverage is automated and repeatable.
-- Remaining P0 blockers: SVG trust boundary, SVG sizing, in-flight SVG/bitmap
-  cancellation acceptance, non-APFS publication, app-owned error UX/localization,
+  feColorMatrix, mask, clipPath and fill-opacity/JPEG flattening. A sizing corpus
+  in `Fixtures/SVGSizing/` covers physical units, viewBox/percentage/missing
+  dimensions, explicit width and fractional output.
+- `make check` has four PASS groups; MKV → MP3 and SVG sizing are covered.
+- Remaining P0 blockers: SVG trust boundary, in-flight SVG/bitmap cancellation
+  acceptance, non-APFS publication, app-owned error UX/localization,
   MP4/FFmpeg trust boundary, and real-file visual acceptance of effects.
 - Design/UIUX is now a first-class workstream; its baseline and review method are
   in `docs/DESIGN.md`.
@@ -43,23 +45,25 @@ Read `docs/CORE.md` and `docs/DESIGN.md` before changing product scope or UI.
 - [x] Reusable synthetic SVG effects corpus in `make check`.
 - [x] Design shell: native toolbar, File/Window/Help menus, standard app menu,
   branded app icon and system-accent controls.
+- [x] MKV → MP3 audio extraction through the same first-audio-track path.
+- [x] SVG sizing rules: 96 dpi units, viewBox/percentage/missing dimensions,
+  width-only explicit sizing, zoom scaling and requested-vs-actual checks.
 - [x] Ad-hoc app build/signature; four `make check` PASS groups; doctor pass.
 
 ## Next landing plan
 
 ### Iteration A (recommended next): design baseline + SVG sizing
 
-1. **Design baseline (D1/D2/D3):** D2/D3 are implemented (icon, native toolbar,
+1. **Design baseline (D1):** D2/D3 are implemented (icon, native toolbar,
    standard menus); finish D1 by capturing the remaining review matrix (invalid,
    converting, done, failed, alert; light/dark; default/min window sizes; four
    locales) and applying tokens more comprehensively in `docs/DESIGN.md`.
-2. **SVG sizing (P0):** implement the agreed rules — 96 dpi physical units,
-   explicit width through renderer width-only, scale through zoom, documented
-   percentage/missing-size behavior, requested width exact and height tolerance
-   ±1 px; verify requested vs actual output.
-3. **UI integration:** make estimated dimensions, source dimensions and errors
-   use the same sizing/validation source so the inspector never contradicts the
-   converted output.
+2. **SVG sizing (P0):** implemented 2026-11-10 — 96 dpi units, viewBox/percentage/
+   missing dimensions, explicit width, zoom scaling and requested-vs-actual checks;
+   verified by `Fixtures/SVGSizing`.
+3. **UI integration:** estimates and conversion sizing share the same parser and
+   planner; the UI verification checked the 96 × 48 estimate and output for a
+   25.4 mm × 12.7 mm fixture.
 4. Exit criteria: `make check` PASS; sizing cases added to the checks corpus;
    screenshots reviewed at default/min sizes; design decisions recorded.
 
@@ -133,11 +137,6 @@ repository, domain/trademark, Developer ID, Intel/macOS 14 hardware.
   CDATA/comments, URLs, XML entities and unsupported animation variants; explicitly
   detect missing content where feasible. Test actual file/network resource denial.
   Current lexical checks are not a general SVG sandbox.
-- [ ] **Define SVG sizing correctly:** px, viewBox-only, missing one dimension,
-  percentages, physical units and fractional sizes. Do not reinterpret mm/cm SVG
-  dimensions as viewBox pixels without a clear rule. Confirm requested vs actual
-  size; the real 1×/2×/4× samples already exposed renderer rounding and unit
-  ambiguity.
 - [ ] **Cancel during actual conversions:** GUI cancel of FFmpeg is verified; add
   targeted SVG/bitmap in-flight cancellation acceptance and verify checks between
   decode/draw/encode stages.
@@ -238,9 +237,9 @@ tasks are required for "complete the v0.1 experience", not optional polish.
   and real opaque/alpha edge cases. Check edge sharpness at enlarged SVG sizes.
 - [ ] Cover real HEIC, PNG → JPG, JPEG → PNG, mirrored EXIF orientations, ICC/P3
   input and the documented sRGB/metadata/HDR policy.
-- [ ] Cover viewBox/units/CJK SVGs and decoded/CDATA external-resource cases.
-  Synthetic gradient/filter/mask/clip/transparency fixtures are covered; viewBox/
-  units, automated CJK and decoded/CDATA cases remain.
+- [ ] Cover CJK SVGs and decoded/CDATA external-resource cases. Synthetic
+  gradient/filter/mask/clip/transparency and viewBox/unit/percentage/missing-size
+  fixtures are covered; automated CJK and decoded/CDATA cases remain.
 - [ ] Test actual output duration, bitrate tolerance, multiple audio streams,
   corrupt MP4s, long filenames and non-ASCII/space-containing paths.
 - [ ] Test timeout, real conversion cancellation, denied write, engine missing,

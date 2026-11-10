@@ -7,7 +7,7 @@ Version **0.1.0 — development preview**. Independent of SwitchPilot.
 
 - Static, self-contained SVG → PNG / JPEG, rendered at the requested pixel size.
 - PNG / JPEG / HEIC → PNG / JPEG, with proportional resizing.
-- MP4 → MP3 (128 / 192 / 320 kbps); first audio track only.
+- MP4 / MKV → MP3 (128 / 192 / 320 kbps); first audio track only.
 - Batch queue, per-file settings, apply-to-similar, cancel/retry, output previews
   for images and Finder reveal. No source deletion or output overwrite.
 - English, 简体中文, 繁體中文, 日本語; follows system language.
@@ -30,6 +30,8 @@ No public standalone release is provided. Engine binaries are not bundled.
 
 Drop files, select an output format, choose a folder, then Convert (⌘↩).
 ⌘O adds files. Width 0 uses 1×/2×/4×; otherwise width is in actual pixels.
+SVG sizing: px and physical units use a 96 dpi reference; percentages need a
+viewBox; an explicit width is exact and height follows the intrinsic aspect ratio.
 Invalid widths or output limits are shown inline and Convert stays disabled
 while a pending file is invalid. The inspector shows estimated output dimensions.
 JPEG fills transparent areas white. Image outputs use 8-bit sRGB.
@@ -41,6 +43,9 @@ then quits; the window cannot be closed while a conversion is running.
 ## Boundaries
 
 - No application network requests, accounts, telemetry or background service.
+- SVG dimension rules: physical units are converted at 96 dpi, percentages
+  require a viewBox, and missing one dimension derives from the viewBox aspect.
+  SVGs with neither dimensions nor a viewBox are rejected.
 - SVG scripts, animation, HTML (`foreignObject`), linked/embedded resources,
   external CSS and XML entities are rejected. Fonts use installed system fonts;
   missing fonts can substitute. Convert text to paths for exact typography.

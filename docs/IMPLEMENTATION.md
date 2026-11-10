@@ -1,6 +1,6 @@
 # TranscodePilot v0.1
 
-Goal: a local macOS window for SVG/bitmap → PNG/JPEG and MP4 → MP3.
+Goal: a local macOS window for SVG/bitmap → PNG/JPEG and MP4/MKV → MP3.
 
 Architecture: Swift Package with an AppKit/SwiftUI executable, UI-independent
 conversion core, and an assert-based checks executable (compatible with CLT).
@@ -143,3 +143,22 @@ development verification aid, not an application dependency.
   light default-size screenshots of empty and populated states were captured.
 - Still pending: D1 full light/dark/min-size/four-locale screenshot matrix,
   D4–D10 visual/UX tasks and design scorecard sign-off.
+
+## SVG sizing and MKV — 2026-11-10
+
+- SVG parser now resolves `px`, physical units at a 96 dpi reference, `viewBox`
+  dimensions, percentages against a viewBox, one missing dimension from the
+  viewBox aspect, and fractional sizes. Percentage/unitless SVGs without a
+  viewBox and SVGs without dimensions/viewBox are rejected with app-owned
+  messages.
+- Explicit width is rendered with renderer width-only and verified to be exact;
+  scale mode uses renderer zoom. Output dimensions are read back before
+  publication, so requested and actual size cannot silently diverge.
+- Added `Fixtures/SVGSizing/` and `checkSVGSizing`: physical units, viewBox-only,
+  percentage, one-dimension, fractional, explicit width, unsupported percentage
+  and missing-dimension rejection. `make check` passes.
+- Added MKV support: `.mkv` files use the MP3 path with an explicit `matroska`
+  demuxer for both ffprobe and ffmpeg; file picker, document types, empty-state
+  format list and README are updated.
+- Verification: `make check` PASS; GUI converted a synthetic MKV → MP3 in about
+  1.1 s; GUI sizing fixture rendered 96 × 48 px at 1× with the same estimate.
