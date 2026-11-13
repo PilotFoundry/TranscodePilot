@@ -319,7 +319,7 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 
 ## P2 — Public source and portable release
 
-- [ ] Create `PilotFoundry/transcodepilot`, configure remote, and publish source
+- [ ] Create `PilotFoundry/TranscodePilot`, configure remote, and publish source
   when authorized. No remote repository exists as part of this implementation.
 - [x] Add CI workflow for core checks, app packaging, localization and policy
   validation. Engine pinning remains deferred (Homebrew install in CI).

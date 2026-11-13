@@ -284,7 +284,7 @@ development verification aid, not an application dependency.
 
 - About panel shows the plist version/build, copyright and a clickable
   `TPProjectURL` GitHub link; Help adds a Repository item. The canonical URL is
-  `https://github.com/PilotFoundry/transcodepilot`.
+  `https://github.com/PilotFoundry/TranscodePilot`.
 - Added CODE_OF_CONDUCT, issue forms, PR template, Dependabot, editorconfig,
   GOVERNANCE, PRIVACY, FAQ, ROADMAP, THIRD_PARTY_NOTICES and OPEN_SOURCE review.
 - The local checkout still has no Git remote; repository publication, tags/Releases,

@@ -65,7 +65,7 @@ production maturity. It complements `docs/RELEASE.md` (release engineering) and
 
 ## Recommended next steps
 
-1. Publish the repository under the authorized `PilotFoundry/transcodepilot` URL,
+1. Publish the repository under the authorized `PilotFoundry/TranscodePilot` URL,
    add branch protection/rulesets and required CI checks.
 2. Enable GitHub private vulnerability reporting, add tags/Releases and pin CI
    engines/actions.

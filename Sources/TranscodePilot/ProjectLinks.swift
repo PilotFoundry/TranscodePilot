@@ -3,7 +3,7 @@ import Foundation
 enum ProjectLinks {
     static let repository: URL = {
         let configured = Bundle.main.object(forInfoDictionaryKey: "TPProjectURL") as? String
-        let fallback = "https://github.com/PilotFoundry/transcodepilot"
+        let fallback = "https://github.com/PilotFoundry/TranscodePilot"
         return URL(string: configured ?? fallback) ?? URL(string: fallback)!
     }()
 

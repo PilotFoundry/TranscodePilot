@@ -13,7 +13,7 @@
 <key>CFBundleVersion</key><string>1</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
-<key>TPProjectURL</key><string>https://github.com/PilotFoundry/transcodepilot</string>
+<key>TPProjectURL</key><string>https://github.com/PilotFoundry/TranscodePilot</string>
 <key>NSHumanReadableCopyright</key><string>PilotFoundry · MIT</string>
 <key>CFBundleDocumentTypes</key><array><dict>
 <key>CFBundleTypeName</key><string>Convertible Media</string>

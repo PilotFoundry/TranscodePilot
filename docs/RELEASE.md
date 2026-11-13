@@ -43,7 +43,7 @@ bundle cleanliness, ad-hoc signature and architecture.
 
 | Item | Why blocked | Required action |
 | --- | --- | --- |
-| Remote source publish | No remote repository exists and publication is not authorized | Create `PilotFoundry/transcodepilot`, add remote, publish on authorization |
+| Remote source publish | No remote repository exists and publication is not authorized | Create `PilotFoundry/TranscodePilot`, add remote, publish on authorization |
 | Developer ID signing/notarization | No Developer ID credentials or notary access in this environment | Provide credentials, sign with hardened runtime, notarize and staple |
 | Intel + macOS 14 validation | No Intel or macOS 14 hardware | Build/test on those systems or narrow support further |
 | Clean-Mac test | No clean Mac target | Test unsigned/local-brew-free install on a clean machine |
