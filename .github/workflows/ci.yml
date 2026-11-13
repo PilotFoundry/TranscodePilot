@@ -36,7 +36,7 @@ jobs:
       - name: Package ad-hoc preview
         run: make package
       - name: Upload preview package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: transcodepilot-preview
           path: |
