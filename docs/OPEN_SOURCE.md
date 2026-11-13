@@ -20,7 +20,7 @@ production maturity. It complements `docs/RELEASE.md` (release engineering) and
   `build-and-verify` status check; force pushes and deletions are disabled.
 - GitHub private vulnerability reporting and vulnerability alerts are enabled.
 - `CHANGELOG.md`, release verification scripts, ZIP/SHA256 generation, release
-  notes and a release acceptance record.
+  notes, a `v0.1.0` pre-release on GitHub and a release acceptance record.
 - Four-language UI and localization parity gate (`102` keys × 4 tables at this
   revision).
 - About panel with plist-derived version/build, copyright and a clickable GitHub
@@ -33,9 +33,9 @@ production maturity. It complements `docs/RELEASE.md` (release engineering) and
 
 ### Distribution and trust
 
-- The initial release is a development preview with ad-hoc signing and no
-  notarization. No Developer ID, DMG, automatic update feed, SBOM/provenance or
-  signed checksum attestation exists yet.
+- The initial [v0.1.0 pre-release](https://github.com/PilotFoundry/TranscodePilot/releases/tag/v0.1.0)
+  is ad-hoc signed and not notarized. No Developer ID, DMG, automatic update feed,
+  SBOM/provenance or signed checksum attestation exists yet.
 - Intel and macOS 14 hardware are unvalidated; the support claim is narrowed to
   locally tested Apple Silicon macOS 27.
 - FFmpeg/librsvg are external, unpinned Homebrew dependencies. Their GPL/LGPL

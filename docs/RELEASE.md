@@ -59,8 +59,10 @@ bundle cleanliness, ad-hoc signature and architecture.
 - Source published to <https://github.com/PilotFoundry/TranscodePilot>.
 - Hosted CI passed at `226070e55ce066c662a0bd221f2201b8f325849e` on
   `macos-latest`; `main` requires `build-and-verify`.
-- Initial `v0.1.0` development preview is published as a pre-release with the
-  ZIP/SHA256 assets. It remains ad-hoc signed and not notarized.
+- Initial [v0.1.0](https://github.com/PilotFoundry/TranscodePilot/releases/tag/v0.1.0)
+  development preview is published as a GitHub pre-release with ZIP/SHA256 assets;
+  asset digest `sha256:fa235da03d3d2188adfed1de8ce45754dcfe396511019764f5f42930267406ec`.
+  It remains ad-hoc signed and not notarized.
 - Remote/tag/Release publication is recorded here; signed stable distribution
   remains blocked on Developer ID/notarization.
 

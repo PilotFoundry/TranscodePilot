@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/PilotFoundry/TranscodePilot/actions/workflows/ci.yml/badge.svg)](https://github.com/PilotFoundry/TranscodePilot/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/PilotFoundry/TranscodePilot?include_prereleases&label=release)](https://github.com/PilotFoundry/TranscodePilot/releases/tag/v0.1.0)
 [![Development preview](https://img.shields.io/badge/version-0.1.0_dev_preview-orange.svg)](CHANGELOG.md)
 
 Local image and audio conversion for macOS, by **PilotFoundry**.
@@ -9,8 +10,8 @@ Version **0.1.0 — development preview**. Independent of SwitchPilot.
 
 Canonical source: <https://github.com/PilotFoundry/TranscodePilot>.
 The repository is public; a `v0.1.0` development preview is available under
-[Releases](https://github.com/PilotFoundry/TranscodePilot/releases). Release
-validation and known limitations are tracked in [docs/RELEASE.md](docs/RELEASE.md).
+[Releases](https://github.com/PilotFoundry/TranscodePilot/releases/tag/v0.1.0).
+Release validation and known limitations are tracked in [docs/RELEASE.md](docs/RELEASE.md).
 
 [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md)
 
