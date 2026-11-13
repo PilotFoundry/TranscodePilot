@@ -289,3 +289,14 @@ development verification aid, not an application dependency.
   GOVERNANCE, PRIVACY, FAQ, ROADMAP, THIRD_PARTY_NOTICES and OPEN_SOURCE review.
 - The local checkout still has no Git remote; repository publication, tags/Releases,
   branch protection and private security reporting remain external blockers.
+
+## Public repository maintenance — 2026-11-13
+
+- Published source to `https://github.com/PilotFoundry/TranscodePilot`; configured
+  `origin`, `main` tracking, topics, description, Discussions, CODEOWNERS,
+  maintainers, issue forms and Dependabot.
+- Enabled private vulnerability reporting/vulnerability alerts and branch
+  protection requiring the hosted `build-and-verify` check; force pushes and
+  deletions are disabled.
+- Hosted CI passed on `macos-latest`; action pins advanced to checkout/upload-
+  artifact v7. Initial `v0.1.0` pre-release and ZIP/SHA256 assets are published.

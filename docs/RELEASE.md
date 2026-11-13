@@ -27,8 +27,9 @@ bundle cleanliness, ad-hoc signature and architecture.
   is a monotonically increasing build number.
 - A release updates `Info.plist`, `CHANGELOG.md` and this acceptance record, then
   tags the commit `vX.Y.Z` after CI/verification passes.
-- Current preview: `0.1.0` build `1`; no tags/Releases exist because the repository
-  has not been published.
+- Current preview: `0.1.0` build `1`; the public repository is
+  `PilotFoundry/TranscodePilot`. The initial `v0.1.0` tag/Releases are maintained
+  on GitHub after CI passes.
 - Never move or force-push a published tag; publish checksums with the artifact.
 
 ## Manual install check
@@ -43,7 +44,6 @@ bundle cleanliness, ad-hoc signature and architecture.
 
 | Item | Why blocked | Required action |
 | --- | --- | --- |
-| Remote source publish | No remote repository exists and publication is not authorized | Create `PilotFoundry/TranscodePilot`, add remote, publish on authorization |
 | Developer ID signing/notarization | No Developer ID credentials or notary access in this environment | Provide credentials, sign with hardened runtime, notarize and staple |
 | Intel + macOS 14 validation | No Intel or macOS 14 hardware | Build/test on those systems or narrow support further |
 | Clean-Mac test | No clean Mac target | Test unsigned/local-brew-free install on a clean machine |
@@ -51,7 +51,18 @@ bundle cleanliness, ad-hoc signature and architecture.
 | CI engine pinning | Workflow installs Homebrew engines; no pinned artifacts | Provision pinned engine versions and record their checksums |
 | Domain/trademark | Preliminary searches are not legal clearance | Register/verify domain and complete formal trademark review |
 | Organization profile | Depends on remote publication | Update PilotFoundry profile after publishing |
-| Localized release pages | README entry points are added; hosted pages do not exist | Publish localized pages after remote authorization |
+| Localized release pages | README entry points are added; hosted localized pages do not exist | Publish localized pages after content stabilizes |
+| Branch protection mirror | Protected on GitHub; no local enforcement | Keep required checks enabled when collaborators join |
+
+## Release acceptance record — 2026-11-13
+
+- Source published to <https://github.com/PilotFoundry/TranscodePilot>.
+- Hosted CI passed at `226070e55ce066c662a0bd221f2201b8f325849e` on
+  `macos-latest`; `main` requires `build-and-verify`.
+- Initial `v0.1.0` development preview is published as a pre-release with the
+  ZIP/SHA256 assets. It remains ad-hoc signed and not notarized.
+- Remote/tag/Release publication is recorded here; signed stable distribution
+  remains blocked on Developer ID/notarization.
 
 ## Release acceptance record — 2026-11-10
 

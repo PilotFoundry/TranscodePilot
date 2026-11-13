@@ -1,4 +1,4 @@
-# Open-source readiness review — 2026-11-10
+# Open-source readiness review — 2026-11-13
 
 This is a candid audit of the repository as an open-source project, not a claim of
 production maturity. It complements `docs/RELEASE.md` (release engineering) and
@@ -6,52 +6,52 @@ production maturity. It complements `docs/RELEASE.md` (release engineering) and
 
 ## Present
 
-- MIT `LICENSE` with a 2026 PilotFoundry copyright line.
+- Public MIT-licensed repository:
+  <https://github.com/PilotFoundry/TranscodePilot>.
 - README in English plus 简体中文, 繁體中文 and 日本語 entry points, screenshots,
   prerequisites and explicit limitations.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `FAQ.md`,
-  `ROADMAP.md`, `GOVERNANCE.md`, `PRIVACY.md` and `THIRD_PARTY_NOTICES.md`.
-- GitHub issue forms, a PR checklist and a monthly Dependabot configuration for
-  GitHub Actions.
-- CI workflow for checks, app build, metadata/localization verification, release
-  build and preview packaging.
-- `CHANGELOG.md`, release verification scripts, ZIP/SHA256 generation and a release
-  acceptance record.
+  `ROADMAP.md`, `GOVERNANCE.md`, `PRIVACY.md`, `MAINTAINERS.md` and
+  `THIRD_PARTY_NOTICES.md`.
+- GitHub issue forms, PR checklist, CODEOWNERS, Discussions and a monthly
+  Dependabot configuration for GitHub Actions.
+- Hosted CI on `macos-latest` passes checks, app build, metadata/localization
+  verification, release build and preview packaging. `main` requires the
+  `build-and-verify` status check; force pushes and deletions are disabled.
+- GitHub private vulnerability reporting and vulnerability alerts are enabled.
+- `CHANGELOG.md`, release verification scripts, ZIP/SHA256 generation, release
+  notes and a release acceptance record.
 - Four-language UI and localization parity gate (`102` keys × 4 tables at this
   revision).
 - About panel with plist-derived version/build, copyright and a clickable GitHub
-  link; Help menu repository entry. The intended URL is configured through
+  link; Help menu repository entry. The URL is configured through
   `TPProjectURL`.
 - Synthetic, committed test fixtures; personal media and personal screenshots are
   not committed.
 
 ## Still missing or externally blocked
 
-### Repository and community
+### Distribution and trust
 
-- **No public remote.** `git remote -v` is empty; the About/README GitHub URL is the
-  intended canonical location and will remain unavailable until publication is
-  authorized.
-- No tags, GitHub Releases, issue labels, Discussions, CODEOWNERS or maintainer
-  list. The single-maintainer governance model is documented but not yet enforced
-  by branch protection/rulesets.
-- No GitHub Security Advisories / private reporting enabled until publication.
-- Full documentation is English-first; only README entry points are localized.
-
-### Supply chain and release
-
-- CI installs unpinned Homebrew FFmpeg/librsvg and uses major-tag action versions;
-  pin engine artifacts and action commit SHAs before a public release.
-- CI has not run on a hosted runner in this session; branch protection and required
-  checks cannot be verified locally.
-- Release is ad-hoc signed and not notarized; no Developer ID, no DMG, no automatic
-  update feed, no SBOM/provenance/signed checksum attestation.
-- No clean-Mac, Intel or macOS 14 hardware validation; support is explicitly
-  narrowed to locally tested Apple Silicon macOS 27.
-- FFmpeg/librsvg are not bundled and their GPL/LGPL redistribution obligations are
-  not cleared for a standalone binary; see `THIRD_PARTY_NOTICES.md`.
+- The initial release is a development preview with ad-hoc signing and no
+  notarization. No Developer ID, DMG, automatic update feed, SBOM/provenance or
+  signed checksum attestation exists yet.
+- Intel and macOS 14 hardware are unvalidated; the support claim is narrowed to
+  locally tested Apple Silicon macOS 27.
+- FFmpeg/librsvg are external, unpinned Homebrew dependencies. Their GPL/LGPL
+  redistribution obligations are not cleared for a standalone binary; see
+  `THIRD_PARTY_NOTICES.md`.
 - Engine memory/CPU rlimits remain unimplemented; timeouts, bounded probes and
   bounded child termination are in place.
+
+### CI and supply chain
+
+- The CI runner image and Homebrew engine versions are unpinned; actions are used
+  by major tag (`@v7`) rather than commit SHA. Pin these before a production
+  release and record engine checksums.
+- No automated release workflow, tag signing or release artifact attestation.
+- No SBOM, dependency-vulnerability review beyond Dependabot for GitHub Actions,
+  no actionlint/shellcheck in CI, and no benchmark/coverage gate.
 
 ### Quality and accessibility
 
@@ -59,17 +59,23 @@ production maturity. It complements `docs/RELEASE.md` (release engineering) and
   executable-based because CLT has no XCTest.
 - Live VoiceOver/focus-order, physical drag/drop and TCC folder-prompt acceptance
   remain manual. AX labels and keyboard Cmd+Return flow are verified.
-- No automated code coverage, fuzzing, static analysis, shellcheck/actionlint or
-  benchmark suite.
-- No real-camera HEIC/ICC corpus or real exFAT/network-volume acceptance.
+- No fuzzing, static analysis, automated coverage or real-camera HEIC/ICC corpus.
+- Real exFAT/network-volume acceptance remains manual.
+
+### Community and documentation
+
+- Full documentation is English-first; only README entry points are localized.
+- Discussions/issues/labels are enabled, but no maintainer rotation, triage
+  cadence or public release cadence has been exercised yet.
+- No hosted documentation site; docs live in the repository.
 
 ## Recommended next steps
 
-1. Publish the repository under the authorized `PilotFoundry/TranscodePilot` URL,
-   add branch protection/rulesets and required CI checks.
-2. Enable GitHub private vulnerability reporting, add tags/Releases and pin CI
-   engines/actions.
-3. Clear code-signing/notarization and third-party redistribution before any
-   standalone binary; keep the ad-hoc preview label until then.
-4. Add CODEOWNERS/maintainer list, issue labels and a small public roadmap cadence.
-5. Close the manual accessibility/volume/TCC gates and add UI e2e coverage.
+1. Pin CI runner image, engine artifacts/checksums and action commit SHAs; add
+   actionlint/shellcheck and an SBOM/provenance step.
+2. Complete Developer ID signing/notarization before promoting the preview to a
+   stable release; do not move or force-push published tags.
+3. Complete the manual VoiceOver/focus, TCC, real-volume and clean-Mac gates.
+4. Add community triage labels/maintainer rotation and a small release cadence;
+   keep the roadmap demand-driven.
+5. Revisit full-document localization after the product scope stabilizes.

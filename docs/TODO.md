@@ -319,10 +319,12 @@ tasks are required for "complete the v0.1 experience", not optional polish.
 
 ## P2 — Public source and portable release
 
-- [ ] Create `PilotFoundry/TranscodePilot`, configure remote, and publish source
-  when authorized. No remote repository exists as part of this implementation.
+- [x] Create `PilotFoundry/TranscodePilot`, configure remote, publish source and
+  maintain the public repository (remote, tags, Releases, CI, branch protection).
 - [x] Add CI workflow for core checks, app packaging, localization and policy
-  validation. Engine pinning remains deferred (Homebrew install in CI).
+  validation; hosted CI passes on `macos-latest`. Engine pinning remains deferred.
+- [x] Publish tags/GitHub Releases, CODEOWNERS/maintainers, Discussions, private
+  vulnerability reporting, Dependabot and required status checks on `main`.
 - [ ] Choose distributable FFmpeg/librsvg builds, minimum OS and architectures;
   bundle all needed libraries/fonts/config without Homebrew absolute paths.
 - [ ] Audit engine licenses/configuration and supply third-party notices, source

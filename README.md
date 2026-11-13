@@ -8,8 +8,9 @@ Local image and audio conversion for macOS, by **PilotFoundry**.
 Version **0.1.0 — development preview**. Independent of SwitchPilot.
 
 Canonical source: <https://github.com/PilotFoundry/TranscodePilot>.
-The repository is public; release validation and known limitations are tracked in
-[docs/RELEASE.md](docs/RELEASE.md).
+The repository is public; a `v0.1.0` development preview is available under
+[Releases](https://github.com/PilotFoundry/TranscodePilot/releases). Release
+validation and known limitations are tracked in [docs/RELEASE.md](docs/RELEASE.md).
 
 [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md)
 
@@ -42,8 +43,8 @@ make run
 
 The build is `.build/TranscodePilot.app`, ad-hoc signed, not notarized. A local
 preview package can be produced with `make package`
-(`.build/release/TranscodePilot-<version>-<arch>.zip` plus SHA256). No public
-standalone release is provided; engine binaries are not bundled.
+(`.build/release/TranscodePilot-<version>-<arch>.zip` plus SHA256). The public
+preview release is attached to GitHub Releases; engine binaries are not bundled.
 
 Drop files, select an output format, choose a folder, then Convert (⌘↩).
 ⌘O adds files. Width 0 uses 1×/2×/4×; otherwise width is in actual pixels.

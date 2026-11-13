@@ -25,8 +25,9 @@ telemetry, has no accounts and runs no background service.
 
 ## Reporting
 
-The local checkout has no configured remote. When the repository is published,
-enable GitHub private vulnerability reporting and use that channel; otherwise
-report privately to the maintainer and keep details private until reviewed.
+GitHub private vulnerability reporting is enabled for
+[PilotFoundry/TranscodePilot](https://github.com/PilotFoundry/TranscodePilot/security/policy).
+Use that channel and keep details private until reviewed; otherwise report
+privately to the maintainer.
 Include the app version, macOS version, a minimal reproducer and whether a network
 or filesystem boundary was crossed. Do not attach personal media or credentials.
